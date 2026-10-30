@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import BackLink from "@/components/BackLink";
 import { getSocket } from "@/lib/socket";
 
 export type Seat = "host" | "guest";
@@ -84,9 +83,9 @@ export function useGameRoom<R extends BaseRoom>(prefix: string, code: string) {
 
 /** Header: back link, room code copy, session score, ready bar, peer-left notice. */
 export function RoomHeader({
-  prefix, lobbyLabel, title, code, room, seat, peerLeft, emit, over, onRematch, rematchLabel = "Chơi lại",
+  title, code, room, seat, peerLeft, emit, over, onRematch, rematchLabel = "Chơi lại",
 }: {
-  prefix: string; lobbyLabel: string; title: string; code: string; room: BaseRoom | null; seat: Seat | null;
+  prefix?: string; lobbyLabel?: string; title: string; code: string; room: BaseRoom | null; seat: Seat | null;
   peerLeft: boolean; emit: (e: string, p?: unknown) => void; over: boolean; onRematch?: () => void; rematchLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -96,7 +95,6 @@ export function RoomHeader({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <BackLink href={`/game/${prefix}`}>{lobbyLabel}</BackLink>
           <h1 className="mt-2 text-xl font-bold">
             {title} · Phòng <span className="select-text font-mono tracking-widest text-cyan-300">{code}</span>
           </h1>

@@ -1,6 +1,5 @@
 "use client";
 
-import BackLink from "@/components/BackLink";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSocket } from "@/lib/socket";
@@ -67,7 +66,6 @@ export default function CaroLobbyPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <BackLink href="/">Về trang chủ</BackLink>
         <h1 className="mt-2 text-2xl font-bold">Cờ Caro — phòng 2 người</h1>
         <p className="mt-1 text-sm text-slate-400">
           Thắng khi 5 quân liên tiếp <strong>không bị chặn 2 đầu</strong> (mép bàn hoặc quân địch đều tính là chặn).

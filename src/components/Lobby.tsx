@@ -2,7 +2,6 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import BackLink from "@/components/BackLink";
 import { getSocket } from "@/lib/socket";
 
 type RoomPayload = { ok: boolean; error?: string; room?: { code: string } };
@@ -50,7 +49,6 @@ export default function Lobby({
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <BackLink href="/">Về trang chủ</BackLink>
         <h1 className="mt-3 text-2xl font-bold">{title}</h1>
       </div>
       {children}

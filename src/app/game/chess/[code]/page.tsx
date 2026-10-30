@@ -1,6 +1,5 @@
 "use client";
 
-import BackLink from "@/components/BackLink";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
@@ -446,7 +445,6 @@ export default function ChessRoomPage() {
     <div className="relative space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <BackLink href="/game/chess">Lobby Cờ vua</BackLink>
           <h1 className="text-xl font-bold">
             Phòng <span className="select-text font-mono tracking-widest text-cyan-300">{code}</span>
           </h1>
