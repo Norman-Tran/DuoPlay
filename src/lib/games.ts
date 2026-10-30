@@ -76,6 +76,15 @@ export const GAMES: GameMeta[] = [
     href: "/game/uno",
   },
   {
+    id: "go",
+    glow: "rgb(220 174 93 / 0.5)",
+    name: "Cờ vây",
+    emoji: "⚫",
+    blurb: "Bàn 9/13/19, luật tính diện tích (komi 7.5), Ko, đánh dấu quân chết và tự tính điểm, byo-yomi tùy chọn.",
+    status: "playable",
+    href: "/game/go",
+  },
+  {
     id: "bubbles",
     glow: "rgb(56 189 248 / 0.45)",
     name: "Bắn bong bóng",

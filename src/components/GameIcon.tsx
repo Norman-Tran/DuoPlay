@@ -100,6 +100,22 @@ export default function GameIcon({ id }: { id: string }) {
           ))}
         </svg>
       );
+    case "go":
+      return (
+        <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
+          <defs>
+            <radialGradient id="gib" cx="35%" cy="30%" r="70%"><stop offset="0%" stopColor="#666" /><stop offset="100%" stopColor="#050505" /></radialGradient>
+            <radialGradient id="giw" cx="35%" cy="30%" r="75%"><stop offset="0%" stopColor="#fff" /><stop offset="100%" stopColor="#bdb6a6" /></radialGradient>
+          </defs>
+          <rect x={2} y={2} width={44} height={44} rx={4} fill="#dcae5d" />
+          {[10, 18, 26, 34, 42].map((k) => (
+            <g key={k} stroke="#5b4018" strokeWidth={0.8}><path d={`M6 ${k - 4}H42M${k - 4} 6V42`} /></g>
+          ))}
+          <circle className="gi-s1" cx={14} cy={14} r={5.5} fill="url(#gib)" />
+          <circle className="gi-s2" cx={22} cy={22} r={5.5} fill="url(#giw)" />
+          <circle className="gi-s3" cx={30} cy={22} r={5.5} fill="url(#gib)" />
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
