@@ -1,0 +1,6 @@
+﻿node_modules/
+.next/
+logs/
+*.tsbuildinfo
+.env*
+backup_pool_*/
