@@ -81,39 +81,35 @@ export default function GameIcon({ id }: { id: string }) {
           ))}
         </svg>
       );
-    case "uno":
+    case "uno": {
+      // Three cards fanned from one pivot at the bottom centre (24, 46).
+      const card = (fill: string, front: boolean) => (
+        <>
+          <rect x={13} y={4} width={22} height={34} rx={3} fill="#fff" stroke="#0f172a" strokeOpacity={0.35} strokeWidth={0.6} />
+          <rect x={15} y={6} width={18} height={30} rx={2} fill={fill} />
+          <clipPath id={`gi-uno-clip-${fill.slice(1)}`}>
+            <rect x={15} y={6} width={18} height={30} rx={2} />
+          </clipPath>
+          <g clipPath={`url(#gi-uno-clip-${fill.slice(1)})`}>
+            <ellipse cx={24} cy={21} rx={front ? 7.8 : 6.5} ry={front ? 13 : 12} transform="rotate(30 24 21)"
+              fill={front ? "#fff" : "none"} stroke="#fff" strokeWidth={front ? 0 : 1.6} />
+          </g>
+          {front && (
+            <text x={24} y={24.8} textAnchor="middle" fontSize={11} fontWeight={900} fontStyle="italic"
+              textLength={19.5} lengthAdjust="spacingAndGlyphs" transform="rotate(-14 24 21)"
+              fill="#ffd400" stroke="#1a1a1a" strokeWidth={1.7} strokeLinejoin="round" style={{ paintOrder: "stroke" }}
+              fontFamily="Arial Black, Arial, sans-serif">UNO</text>
+          )}
+        </>
+      );
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
-          <defs>
-            <clipPath id="gi-uno-clip">
-              <rect x={16} y={9} width={16} height={26} rx={2} />
-            </clipPath>
-          </defs>
-          {[
-            ["gi-u1", "#0b63c5", -16, ""],
-            ["gi-u3", "#2aa84a", 16, ""],
-            ["", "#e2231a", 0, "UNO"],
-          ].map(([c, fill, rot, txt], i) => (
-            <g key={i} className={c as string}>
-              <g transform={`rotate(${rot} 24 44)`}>
-                <rect x={14} y={7} width={20} height={30} rx={3} fill="#fff" stroke="#d4d4d4" strokeWidth={0.5} />
-                <rect x={16} y={9} width={16} height={26} rx={2} fill={fill as string} />
-                <g clipPath="url(#gi-uno-clip)">
-                  <ellipse cx={24} cy={22} rx={6.2} ry={10.5} transform="rotate(35 24 22)" fill="#fff" />
-                </g>
-                {txt ? (
-                  <text x={24} y={24.6} textAnchor="middle" fontSize={7.2} fontWeight={900} fontStyle="italic"
-                    fill="#f6c400" stroke="#111" strokeWidth={0.9} style={{ paintOrder: "stroke" }}
-                    transform="rotate(-18 24 22)" fontFamily="Arial Black, Arial, sans-serif">UNO</text>
-                ) : (
-                  <text x={24} y={26} textAnchor="middle" fontSize={10} fontWeight={900} fill={fill as string}
-                    fontFamily="Arial Black, Arial, sans-serif">7</text>
-                )}
-              </g>
-            </g>
-          ))}
+          <g className="gi-u1"><g transform="rotate(-15 24 46)">{card("#0b63c5", false)}</g></g>
+          <g className="gi-u3"><g transform="rotate(15 24 46)">{card("#2aa84a", false)}</g></g>
+          <g className="gi-u2">{card("#e2231a", true)}</g>
         </svg>
       );
+    }
     case "go":
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
