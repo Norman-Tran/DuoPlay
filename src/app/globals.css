@@ -199,10 +199,8 @@ input, textarea, [contenteditable], [contenteditable] *, .select-text {
 @keyframes uno-burst { 0% { transform: scale(0.2) rotate(-20deg); opacity: 0; } 30% { transform: scale(1.25) rotate(4deg); opacity: 1; } 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
 .game-bg-uno { --bg-a: #2a0b0b; --bg-b: #0b1630; --blob-a: rgb(226 35 26 / 0.07); --blob-b: rgb(11 99 197 / 0.06); }
 .game-bg-uno .game-bg-pattern { background-image: radial-gradient(ellipse 18px 28px, rgb(255 255 255 / 0.025) 60%, transparent 62%); background-size: 70px 70px; }
-.gi-u1, .gi-u2, .gi-u3 { transform-box: view-box !important; transform-origin: 24px 46px !important; transition: transform 0.3s ease-out; }
-.group:hover .gi-u1, .group:focus-visible .gi-u1 { transform: rotate(-9deg); }
-.group:hover .gi-u3, .group:focus-visible .gi-u3 { transform: rotate(9deg); }
-.group:hover .gi-u2, .group:focus-visible .gi-u2 { transform: translateY(-1.5px); }
+.gi-uno { transition: transform 0.3s ease-out; transform-origin: 50% 90%; }
+.group:hover .gi-uno, .group:focus-visible .gi-uno { transform: scale(1.1) rotate(-6deg); }
 @media (prefers-reduced-motion: reduce) { .uno-fly, .uno-draw, .uno-burst { animation: none !important; } }
 
 /* ---------- Go ---------- */
@@ -221,4 +219,4 @@ input, textarea, [contenteditable], [contenteditable] *, .select-text {
 .group:hover .gi-s2, .group:focus-visible .gi-s2 { animation: gi-stone 1.6s ease-out 0.4s infinite; }
 .group:hover .gi-s3, .group:focus-visible .gi-s3 { animation: gi-stone 1.6s ease-out 0.8s infinite; }
 @media (prefers-reduced-motion: reduce) { .go-drop, .go-cap, .go-terr { animation: none !important; } }
-@media (prefers-reduced-motion: reduce) { .gi-u1, .gi-u2, .gi-u3 { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .gi-uno { transition: none; } }

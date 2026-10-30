@@ -1,5 +1,8 @@
 // Inline SVG game icons; animations live in globals.css (.gi-*), triggered by parent `.group` hover/focus.
+import { useId } from "react";
+
 export default function GameIcon({ id }: { id: string }) {
+  const uid = useId().replace(/:/g, "");
   const cls = "gi h-12 w-12 overflow-visible";
   switch (id) {
     case "caro":
@@ -81,49 +84,28 @@ export default function GameIcon({ id }: { id: string }) {
           ))}
         </svg>
       );
-    case "uno": {
-      // Three cards fanned from one pivot at the bottom centre (24, 46).
-      const card = (fill: string, front: boolean) => (
-        <>
-          <rect x={13} y={4} width={22} height={34} rx={3} fill="#fff" stroke="#0f172a" strokeOpacity={0.35} strokeWidth={0.6} />
-          <rect x={15} y={6} width={18} height={30} rx={2} fill={fill} />
-          <clipPath id={`gi-uno-clip-${fill.slice(1)}`}>
-            <rect x={15} y={6} width={18} height={30} rx={2} />
-          </clipPath>
-          <g clipPath={`url(#gi-uno-clip-${fill.slice(1)})`}>
-            <ellipse cx={24} cy={21} rx={front ? 7.8 : 6.5} ry={front ? 13 : 12} transform="rotate(30 24 21)"
-              fill={front ? "#fff" : "none"} stroke="#fff" strokeWidth={front ? 0 : 1.6} />
-          </g>
-          {front && (
-            <text x={24} y={24.8} textAnchor="middle" fontSize={11} fontWeight={900} fontStyle="italic"
-              textLength={19.5} lengthAdjust="spacingAndGlyphs" transform="rotate(-14 24 21)"
-              fill="#ffd400" stroke="#1a1a1a" strokeWidth={1.7} strokeLinejoin="round" style={{ paintOrder: "stroke" }}
-              fontFamily="Arial Black, Arial, sans-serif">UNO</text>
-          )}
-        </>
-      );
+    case "uno":
+      // Static file: fixed geometry, own ids, untouched by page CSS. Hover animates the wrapper only.
       return (
-        <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
-          <g className="gi-u1"><g transform="rotate(-15 24 46)">{card("#0b63c5", false)}</g></g>
-          <g className="gi-u3"><g transform="rotate(15 24 46)">{card("#2aa84a", false)}</g></g>
-          <g className="gi-u2">{card("#e2231a", true)}</g>
-        </svg>
+        <span className="gi-uno inline-block h-12 w-12">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/uno.svg" alt="" width={48} height={48} className="h-12 w-12" draggable={false} />
+        </span>
       );
-    }
     case "go":
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
           <defs>
-            <radialGradient id="gib" cx="35%" cy="30%" r="70%"><stop offset="0%" stopColor="#666" /><stop offset="100%" stopColor="#050505" /></radialGradient>
-            <radialGradient id="giw" cx="35%" cy="30%" r="75%"><stop offset="0%" stopColor="#fff" /><stop offset="100%" stopColor="#bdb6a6" /></radialGradient>
+            <radialGradient id={`gib${uid}`} cx="35%" cy="30%" r="70%"><stop offset="0%" stopColor="#666" /><stop offset="100%" stopColor="#050505" /></radialGradient>
+            <radialGradient id={`giw${uid}`} cx="35%" cy="30%" r="75%"><stop offset="0%" stopColor="#fff" /><stop offset="100%" stopColor="#bdb6a6" /></radialGradient>
           </defs>
           <rect x={2} y={2} width={44} height={44} rx={4} fill="#dcae5d" />
           {[10, 18, 26, 34, 42].map((k) => (
             <g key={k} stroke="#5b4018" strokeWidth={0.8}><path d={`M6 ${k - 4}H42M${k - 4} 6V42`} /></g>
           ))}
-          <circle className="gi-s1" cx={14} cy={14} r={5.5} fill="url(#gib)" />
-          <circle className="gi-s2" cx={22} cy={22} r={5.5} fill="url(#giw)" />
-          <circle className="gi-s3" cx={30} cy={22} r={5.5} fill="url(#gib)" />
+          <circle className="gi-s1" cx={14} cy={14} r={5.5} fill={`url(#gib${uid})`} />
+          <circle className="gi-s2" cx={22} cy={22} r={5.5} fill={`url(#giw${uid})`} />
+          <circle className="gi-s3" cx={30} cy={22} r={5.5} fill={`url(#gib${uid})`} />
         </svg>
       );
     default:

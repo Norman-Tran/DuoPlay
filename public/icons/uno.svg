@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+<defs><clipPath id="uno-icon-clip-b"><rect x="15" y="6" width="18" height="30" rx="2"/></clipPath><clipPath id="uno-icon-clip-g"><rect x="15" y="6" width="18" height="30" rx="2"/></clipPath><clipPath id="uno-icon-clip-r"><rect x="15" y="6" width="18" height="30" rx="2"/></clipPath></defs>
+<g transform="rotate(-15 24 46)"><rect x="13" y="4" width="22" height="34" rx="3" fill="#fff" stroke="#0f172a" stroke-opacity="0.35" stroke-width="0.6"/>
+<rect x="15" y="6" width="18" height="30" rx="2" fill="#0b63c5"/>
+<g clip-path="url(#uno-icon-clip-b)"><ellipse cx="24" cy="21" rx="6.5" ry="12" transform="rotate(30 24 21)" fill="none" stroke="#fff" stroke-width="1.6"/></g></g>
+<g transform="rotate(15 24 46)"><rect x="13" y="4" width="22" height="34" rx="3" fill="#fff" stroke="#0f172a" stroke-opacity="0.35" stroke-width="0.6"/>
+<rect x="15" y="6" width="18" height="30" rx="2" fill="#2aa84a"/>
+<g clip-path="url(#uno-icon-clip-g)"><ellipse cx="24" cy="21" rx="6.5" ry="12" transform="rotate(30 24 21)" fill="none" stroke="#fff" stroke-width="1.6"/></g></g>
+<g><rect x="13" y="4" width="22" height="34" rx="3" fill="#fff" stroke="#0f172a" stroke-opacity="0.35" stroke-width="0.6"/>
+<rect x="15" y="6" width="18" height="30" rx="2" fill="#e2231a"/>
+<g clip-path="url(#uno-icon-clip-r)"><ellipse cx="24" cy="21" rx="7.8" ry="13" transform="rotate(30 24 21)" fill="#fff"/></g><text x="24" y="24.8" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="11" font-weight="900" font-style="italic" textLength="19.5" lengthAdjust="spacingAndGlyphs" transform="rotate(-14 24 21)" fill="#ffd400" stroke="#1a1a1a" stroke-width="1.7" stroke-linejoin="round" paint-order="stroke">UNO</text></g>
+</svg>
