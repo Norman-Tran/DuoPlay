@@ -67,6 +67,15 @@ export const GAMES: GameMeta[] = [
     href: "/game/domino",
   },
   {
+    id: "uno",
+    glow: "rgb(226 35 26 / 0.5)",
+    name: "UNO",
+    emoji: "🃏",
+    blurb: "Luật Mattel cho 2 người: 108 lá, +2, +4 có thách đấu, hô UNO và bắt lỗi. Đua tới 200/300/500 điểm.",
+    status: "playable",
+    href: "/game/uno",
+  },
+  {
     id: "bubbles",
     glow: "rgb(56 189 248 / 0.45)",
     name: "Bắn bong bóng",

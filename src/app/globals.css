@@ -179,3 +179,29 @@ input, textarea, [contenteditable], [contenteditable] *, .select-text {
   .wd-pop, .wd-shake, .wd-bounce, .dm-enter, .dm-flip, .dm-marker { animation: none !important; }
   .wd-flip { animation-duration: 1ms !important; }
 }
+
+/* ---------- UNO ---------- */
+.uno-hand { transform: rotate(var(--rot, 0deg)) translateY(var(--dy, 0px)); transform-origin: 50% 120%; transition: transform 0.2s ease-out, filter 0.2s, opacity 0.2s; }
+.uno-hand:hover, .uno-hand:focus-visible { transform: rotate(var(--rot, 0deg)) translateY(calc(var(--dy, 0px) - 18px)) scale(1.06); z-index: 10; }
+.uno-legal { filter: drop-shadow(0 0 6px rgb(250 250 210 / 0.9)); }
+.uno-fly { transform: rotate(var(--tilt, 0deg)); animation: uno-fly 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes uno-fly {
+  from { transform: translateY(var(--fy, 0px)) rotate(calc(var(--tilt, 0deg) - 200deg)) scale(0.8); opacity: 0.6; }
+  to { transform: rotate(var(--tilt, 0deg)); opacity: 1; }
+}
+.uno-draw { animation: uno-draw 600ms ease-out both; }
+@keyframes uno-draw {
+  0% { transform: translate(-120px, -220px) rotateY(180deg) scale(0.8); opacity: 0.3; }
+  60% { transform: translate(0, -20px) rotateY(60deg); opacity: 1; }
+  100% { transform: rotate(var(--rot, 0deg)) translateY(var(--dy, 0px)); }
+}
+.uno-burst { animation: uno-burst 1.2s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+@keyframes uno-burst { 0% { transform: scale(0.2) rotate(-20deg); opacity: 0; } 30% { transform: scale(1.25) rotate(4deg); opacity: 1; } 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+.game-bg-uno { --bg-a: #2a0b0b; --bg-b: #0b1630; --blob-a: rgb(226 35 26 / 0.07); --blob-b: rgb(11 99 197 / 0.06); }
+.game-bg-uno .game-bg-pattern { background-image: radial-gradient(ellipse 18px 28px, rgb(255 255 255 / 0.025) 60%, transparent 62%); background-size: 70px 70px; }
+@keyframes gi-fan1 { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-22deg); } }
+@keyframes gi-fan3 { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(22deg); } }
+.gi-u1, .gi-u3 { transform-origin: 50% 100% !important; transform-box: view-box !important; }
+.group:hover .gi-u1, .group:focus-visible .gi-u1 { animation: gi-fan1 1.4s ease-in-out infinite; }
+.group:hover .gi-u3, .group:focus-visible .gi-u3 { animation: gi-fan3 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .uno-fly, .uno-draw, .uno-burst { animation: none !important; } }

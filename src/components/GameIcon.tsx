@@ -81,6 +81,25 @@ export default function GameIcon({ id }: { id: string }) {
           ))}
         </svg>
       );
+    case "uno":
+      return (
+        <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
+          {[
+            ["gi-u1", "#0b63c5", -14],
+            ["gi-u3", "#2aa84a", 14],
+            ["", "#e2231a", 0],
+          ].map(([c, fill, rot], i) => (
+            <g key={i} className={c as string} style={{ transformOrigin: "24px 44px" }}>
+              <g transform={`rotate(${rot} 24 44)`}>
+                <rect x={14} y={6} width={20} height={30} rx={3} fill="#fff" />
+                <rect x={15.5} y={7.5} width={17} height={27} rx={2} fill={fill as string} />
+                <ellipse cx={24} cy={21} rx={6} ry={11} transform="rotate(28 24 21)" fill="#fff" />
+                {i === 2 && <text x={24} y={25} textAnchor="middle" fontSize={11} fontWeight={900} fill="#e2231a">+2</text>}
+              </g>
+            </g>
+          ))}
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">

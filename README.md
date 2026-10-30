@@ -16,13 +16,18 @@ Tất cả game đều có: phòng theo mã, **Ready** trước khi chơi, **ch�
 | **Bida lỗ (8-ball)** | Vật lý do server tính (bàn theo kích thước WPA, miệng lỗ có vát). Kéo cơ lùi để lấy lực (có giới hạn), **đánh xoáy** (xoáy lên/xuống/ngang, bi trượt → lăn, xoáy ăn băng), đường ngắm + bi bóng mờ, đặt bi tự do bằng kéo thả, thanh bi còn lại hai bên. |
 | **Wordle đối kháng** | Hai người cùng đoán **một từ tiếng Anh 5 chữ**, 6 lượt mỗi người. Màu chuẩn NYT: xanh `#6aaa64` đúng chỗ, vàng `#c9b458` có nhưng sai chỗ, xám `#787c7e` không có (xử lý chữ lặp như bản gốc). Hiệu ứng gõ chữ, lật ô so le, rung hàng khi từ không có trong từ điển, nảy sóng khi đoán đúng. Bàn phím ảo + bàn phím thật. Chỉ thấy **màu** bàn của đối thủ. Ít lượt hơn thắng; bằng lượt thì nhanh hơn thắng; cả hai trượt → hòa và lộ từ. |
 | **Domino** | Double-six, kiểu **bốc (Draw)**: mỗi người 7 quân, 14 quân trong nọc. Ván đầu ai có đôi lớn nhất (hoặc quân lớn nhất) đi trước bằng quân đó; ván sau người thắng ván trước đi trước. Không nối được thì bốc tới khi được, hết nọc thì qua lượt. Hết bài: cộng chấm trên tay đối thủ; chặn bài: bên ít chấm hơn được phần chênh lệch. Trận tới 50/100/150. Bài trên tay được giấu (server chỉ gửi bài của bạn + số quân đối thủ). Bàn nối kiểu rắn, quân đôi đặt ngang, tự rẽ 90° khi chạm mép. |
+| **UNO** | Luật chính thức Mattel cho 2 người: bộ 108 lá, chia 7 lá, lật lá mở bài (gặp +4 thì xáo lại). Đánh cùng màu/số/ký hiệu; 2 người thì **Đổi chiều = Mất lượt**; +2 bắt bốc 2 và mất lượt; Đổi màu chọn màu; **+4** chỉ hợp lệ khi không còn lá cùng màu — đối thủ được **thách đấu** (gian lận → người đánh bốc 4, không gian lận → người thách bốc 6). Không đánh được thì bốc 1, lá bốc đánh được thì có thể đánh ngay. Hô **UNO!** khi còn 1 lá, quên mà bị **bắt lỗi** trước lượt kế tiếp thì bốc 2. Hết nọc thì xáo lại chồng bài đã đánh (trừ lá trên cùng). Điểm: số = mặt số, lá chức năng 20, Đổi màu 50; trận tới 200/300/500. Bài giấu phía server. Hiệu ứng lá bay vào chồng bài có nghiêng ngẫu nhiên, lá bốc bay từ nọc và lật, chữ UNO nổ, banner mất lượt/+2/+4, vòng sáng màu hiện tại. |
 | Bắn bong bóng | *Sắp ra mắt.* |
+
+## Điều hướng
+
+Thanh điều hướng cố định ở góc trên bên trái, giống nhau trên mọi trang: logo **DuoPlay**, ở lobby có nút **🏠 Trang chủ**, trong phòng có thêm **← Lobby &lt;game&gt;**. Về trang chủ chỉ cần một lần bấm.
 
 ## Công nghệ
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript** + **Tailwind CSS 3**
 - **Socket.io 4** trên cùng origin (path `/api/socketio`), server tùy biến `server.js`
-- Logic game chạy trên server (authoritative): `chess-server.js` (`chess.js`), `mines-server.js`, `pool-server.js`, `wordle-server.js`, `domino-server.js`; `room-kit.js` là phần phòng dùng chung cho Wordle/Domino
+- Logic game chạy trên server (authoritative): `chess-server.js` (`chess.js`), `mines-server.js`, `pool-server.js`, `wordle-server.js`, `domino-server.js`, `uno-server.js`; `room-kit.js` là phần phòng dùng chung cho Wordle/Domino/UNO
 - Không có database
 
 ## Chạy local
@@ -59,17 +64,18 @@ node tests/chess-clock.test.js   # đồng hồ FIDE, cộng giờ, hết giờ 
 node tests/pool-rules.test.js    # luật 8-ball + vật lý/xoáy
 node tests/wordle.test.js        # chấm màu chữ lặp, thắng/hòa
 node tests/domino.test.js        # chia bài, người đi trước, nối quân, bốc/qua lượt, chặn bài, giấu bài
+node tests/uno.test.js           # bộ 108 lá, chia bài, lá hợp lệ, thách đấu +4, phạt UNO, xáo lại, tính điểm, Đổi chiều 2 người
 ```
 
 ## Cấu trúc thư mục
 
 ```
 server.js              # HTTP + Next + Socket.io, đăng ký các *-server.js (Caro nằm trong file này)
-chess-server.js  mines-server.js  pool-server.js  wordle-server.js  domino-server.js
+chess-server.js  mines-server.js  pool-server.js  wordle-server.js  domino-server.js  uno-server.js
 room-kit.js            # create/join/ready/rematch/react/disconnect dùng chung
 data/                  # danh sách từ Wordle + giấy phép
 src/app/               # trang Next.js: / (chọn game), /game/<game> (lobby), /game/<game>/[code] (phòng)
-src/components/        # BackLink, GameIcon, GameBackground, GuardShell, ChessPiece, DominoTile, Lobby, RoomKit
+src/components/        # TopNav, BackLink, GameIcon, GameBackground, GuardShell, ChessPiece, DominoTile, UnoCard, Lobby, RoomKit
 src/lib/               # games.ts (danh sách game), socket.ts, dominoLayout.ts
 tests/                 # node tests
 ```
@@ -78,5 +84,5 @@ tests/                 # node tests
 
 - Danh sách từ Wordle: **SCOWL** © Kevin Atkinson (giấy phép kiểu MIT, xem `data/SCOWL-LICENSE.txt`) và **dwyl/english-words** (Unlicense). Chi tiết: `data/README.md`. Wordle là thương hiệu của The New York Times; đây là bản fan-made không liên quan.
 - Vật lý bida: tài liệu của **Dr. Dave Alciatore** (billiards.colostate.edu) và mô hình của **pooltool** (Evan Kiefl); kích thước bàn/lỗ theo **WPA**.
-- Luật cờ vua & đồng hồ: **FIDE Laws of Chess** (Handbook E.I.01A, Điều 6). Luật domino: pagat.com (*Draw Dominoes*).
+- Luật cờ vua & đồng hồ: **FIDE Laws of Chess** (Handbook E.I.01A, Điều 6). Luật domino: pagat.com (*Draw Dominoes*). Luật UNO: hướng dẫn chính thức của Mattel (UNO instructions, service.mattel.com).
 - Quân cờ và quân domino vẽ bằng SVG trong code, không dùng asset bên ngoài.
