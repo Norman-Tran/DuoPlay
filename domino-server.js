@@ -250,5 +250,6 @@ const kit = createRoomKit("domino", {
 
 module.exports = {
   registerDomino: kit.register,
+  rooms: kit.rooms,
   _test: { fullSet, firstPlayer, legalSides, dealRound, newGame, play, draw, view, handPips, canPlay, nextRound, checkBlocked },
 };

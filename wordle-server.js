@@ -123,5 +123,6 @@ const kit = createRoomKit("wordle", {
 
 module.exports = {
   registerWordle: kit.register,
+  rooms: kit.rooms,
   _test: { scoreGuess, decide, newGame, guess, view, ALLOWED, ANSWERS, MAX_GUESSES },
 };

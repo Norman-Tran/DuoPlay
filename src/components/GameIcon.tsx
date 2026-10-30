@@ -84,17 +84,31 @@ export default function GameIcon({ id }: { id: string }) {
     case "uno":
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
+          <defs>
+            <clipPath id="gi-uno-clip">
+              <rect x={16} y={9} width={16} height={26} rx={2} />
+            </clipPath>
+          </defs>
           {[
-            ["gi-u1", "#0b63c5", -14],
-            ["gi-u3", "#2aa84a", 14],
-            ["", "#e2231a", 0],
-          ].map(([c, fill, rot], i) => (
-            <g key={i} className={c as string} style={{ transformOrigin: "24px 44px" }}>
+            ["gi-u1", "#0b63c5", -16, ""],
+            ["gi-u3", "#2aa84a", 16, ""],
+            ["", "#e2231a", 0, "UNO"],
+          ].map(([c, fill, rot, txt], i) => (
+            <g key={i} className={c as string}>
               <g transform={`rotate(${rot} 24 44)`}>
-                <rect x={14} y={6} width={20} height={30} rx={3} fill="#fff" />
-                <rect x={15.5} y={7.5} width={17} height={27} rx={2} fill={fill as string} />
-                <ellipse cx={24} cy={21} rx={6} ry={11} transform="rotate(28 24 21)" fill="#fff" />
-                {i === 2 && <text x={24} y={25} textAnchor="middle" fontSize={11} fontWeight={900} fill="#e2231a">+2</text>}
+                <rect x={14} y={7} width={20} height={30} rx={3} fill="#fff" stroke="#d4d4d4" strokeWidth={0.5} />
+                <rect x={16} y={9} width={16} height={26} rx={2} fill={fill as string} />
+                <g clipPath="url(#gi-uno-clip)">
+                  <ellipse cx={24} cy={22} rx={6.2} ry={10.5} transform="rotate(35 24 22)" fill="#fff" />
+                </g>
+                {txt ? (
+                  <text x={24} y={24.6} textAnchor="middle" fontSize={7.2} fontWeight={900} fontStyle="italic"
+                    fill="#f6c400" stroke="#111" strokeWidth={0.9} style={{ paintOrder: "stroke" }}
+                    transform="rotate(-18 24 22)" fontFamily="Arial Black, Arial, sans-serif">UNO</text>
+                ) : (
+                  <text x={24} y={26} textAnchor="middle" fontSize={10} fontWeight={900} fill={fill as string}
+                    fontFamily="Arial Black, Arial, sans-serif">7</text>
+                )}
               </g>
             </g>
           ))}

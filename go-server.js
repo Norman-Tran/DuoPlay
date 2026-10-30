@@ -303,5 +303,6 @@ kit = createRoomKit("go", {
 
 module.exports = {
   registerGo: kit.register,
+  rooms: kit.rooms,
   _test: { tryMove, group, scoreArea, newGame, play, pass, toggleDead, accept, resign, view, charge, startClock, B, W, EMPTY, KOMI },
 };

@@ -9,6 +9,7 @@ const { registerWordle } = require("./wordle-server");
 const { registerDomino } = require("./domino-server");
 const { registerUno } = require("./uno-server");
 const { registerGo } = require("./go-server");
+const { installSecurity, originAllowed, ack } = require("./security");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -307,8 +308,23 @@ app.prepare().then(() => {
   const io = new Server(httpServer, {
     path: "/api/socketio",
     addTrailingSlash: false,
+    maxHttpBufferSize: 16 * 1024, // socket.io default is 1 MB
+    // same-origin only (blocks cross-site WebSocket hijacking); extra origins via ALLOWED_ORIGINS
+    allowRequest: (req, cb) => cb(null, originAllowed(req)),
+    cors: { origin: false },
   });
   ioRef = io;
+  // must run before game handlers are registered so its packet middleware sees every event
+  installSecurity(io, [
+    rooms,
+    require("./chess-server").rooms,
+    require("./mines-server").rooms,
+    require("./pool-server").rooms,
+    require("./wordle-server").rooms,
+    require("./domino-server").rooms,
+    require("./uno-server").rooms,
+    require("./go-server").rooms,
+  ]);
   registerChess(io);
   registerMines(io);
   registerPool(io);
@@ -332,18 +348,18 @@ app.prepare().then(() => {
       socket.join(room.code);
       socket.data.roomCode = room.code;
       socket.data.seat = "host";
-      callback?.({ ok: true, seat: "host", mark: "X", room: publicRoom(room) });
+      ack(callback)({ ok: true, seat: "host", mark: "X", room: publicRoom(room) });
     });
 
     socket.on("room:join", (code, cb) => {
       const normalized = String(code || "").trim().toUpperCase();
       const room = rooms.get(normalized);
       if (!room) {
-        cb?.({ ok: false, error: "Không tìm thấy phòng." });
+        ack(cb)({ ok: false, error: "Không tìm thấy phòng." });
         return;
       }
       if (room.guestId && room.guestId !== socket.id) {
-        cb?.({ ok: false, error: "Phòng đã đủ 2 người." });
+        ack(cb)({ ok: false, error: "Phòng đã đủ 2 người." });
         return;
       }
       // rejoin as host if host left
@@ -355,7 +371,7 @@ app.prepare().then(() => {
         socket.data.seat = "host";
         clearTurnTimer(room);
         const payload = { ok: true, seat: "host", mark: "X", room: publicRoom(room) };
-        cb?.(payload);
+        ack(cb)(payload);
         emitRoom(room);
         return;
       }
@@ -366,7 +382,7 @@ app.prepare().then(() => {
       socket.data.seat = "guest";
       clearTurnTimer(room);
       const payload = { ok: true, seat: "guest", mark: "O", room: publicRoom(room) };
-      cb?.(payload);
+      ack(cb)(payload);
       emitRoom(room);
     });
 
@@ -374,28 +390,28 @@ app.prepare().then(() => {
       const code = socket.data.roomCode;
       const room = code ? rooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = socket.id === room.hostId ? "host" : socket.id === room.guestId ? "guest" : null;
       const mark = seat === "host" ? "X" : seat === "guest" ? "O" : null;
-      cb?.({ ok: true, seat, mark, room: publicRoom(room) });
+      ack(cb)({ ok: true, seat, mark, room: publicRoom(room) });
     });
 
     socket.on("room:ready", (ready, cb) => {
       const code = socket.data.roomCode;
       const room = code ? rooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (room.winner) {
-        cb?.({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
+        ack(cb)({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
         return;
       }
       const seat = socket.id === room.hostId ? "host" : socket.id === room.guestId ? "guest" : null;
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       const next = Boolean(ready);
@@ -409,28 +425,29 @@ app.prepare().then(() => {
         clearTurnTimer(room);
       }
       emitRoom(room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
-    socket.on("caro:move", ({ row, col }, cb) => {
+    socket.on("caro:move", (payload, cb) => {
+      const { row, col } = payload && typeof payload === "object" ? payload : {};
       const code = socket.data.roomCode;
       const room = code ? rooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const mark = socket.id === room.hostId ? "X" : socket.id === room.guestId ? "O" : null;
       if (!mark) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (!bothReady(room)) {
-        cb?.({ ok: false, error: "Chờ cả hai sẵn sàng (Ready)." });
+        ack(cb)({ ok: false, error: "Chờ cả hai sẵn sàng (Ready)." });
         return;
       }
       const ok = applyMove(room, row, col, mark, false);
       if (!ok) {
-        cb?.({
+        ack(cb)({
           ok: false,
           error: room.winner
             ? "Ván đã kết thúc."
@@ -439,7 +456,7 @@ app.prepare().then(() => {
         return;
       }
       emitRoom(room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("caro:rematch", (payload, cb) => {
@@ -453,7 +470,7 @@ app.prepare().then(() => {
       const code = socket.data.roomCode;
       const room = code ? rooms.get(code) : null;
       if (!room) {
-        callback?.({ ok: false, error: "Chưa vào phòng." });
+        ack(callback)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       // Only host may change size on rematch; guests keep current size
@@ -469,25 +486,25 @@ app.prepare().then(() => {
       room.hostReady = false;
       room.guestReady = false;
       emitRoom(room);
-      callback?.({ ok: true, room: publicRoom(room) });
+      ack(callback)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("caro:react", (emoji, cb) => {
       const code = socket.data.roomCode;
       const room = code ? rooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = socket.id === room.hostId ? "host" : socket.id === room.guestId ? "guest" : null;
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       const allowed = ["thumbsup", "laugh", "wow", "fire", "cry", "party", "clap", "heart"];
       const pick = allowed.includes(emoji) ? emoji : null;
       if (!pick) {
-        cb?.({ ok: false, error: "Emoji không hợp lệ." });
+        ack(cb)({ ok: false, error: "Emoji không hợp lệ." });
         return;
       }
       const mark = seat === "host" ? "X" : "O";
@@ -497,7 +514,7 @@ app.prepare().then(() => {
         mark,
         at: Date.now(),
       });
-      cb?.({ ok: true });
+      ack(cb)({ ok: true });
     });
 
     socket.on("disconnect", () => {

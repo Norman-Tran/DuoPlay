@@ -58,6 +58,31 @@ cloudflared tunnel --url http://localhost:3100
 
 Lệnh in ra một link `https://<random>.trycloudflare.com` để gửi cho bạn. Link đổi mỗi lần chạy lại tunnel; muốn link cố định cần domain riêng + named tunnel.
 
+## Bảo mật
+
+DuoPlay là app giải trí không có tài khoản/database, nhưng khi mở ra Internet qua tunnel thì server vẫn được bảo vệ một số lớp (`security.js`, `next.config.ts`):
+
+**Giới hạn tần suất & tài nguyên** (đổi được bằng biến môi trường):
+
+| Giới hạn | Mặc định | Biến môi trường |
+|---|---|---|
+| Kết nối đồng thời mỗi IP | 20 | `MAX_CONN_PER_IP` |
+| Sự kiện socket mỗi kết nối | 40/giây, tối đa dồn 80 | `RATE_EVENTS_PER_SEC`, `RATE_EVENT_BURST` |
+| Tạo + vào phòng mỗi kết nối | 20/phút | `RATE_ROOM_OPS_PER_MIN` |
+| Tạo phòng mỗi IP | 10/phút | `RATE_CREATE_PER_MIN_IP` |
+| Tổng số phòng trên server (mọi game) | 500 | `MAX_ROOMS_TOTAL` |
+| Kích thước gói socket | 16 KB (socket.io), dữ liệu đã giải mã ≤ 4 KB | `MAX_PAYLOAD_BYTES` |
+| Xoá phòng trống (không ai kết nối) | sau 5 phút | `EMPTY_ROOM_TTL_MS` |
+| Xoá phòng không hoạt động | sau 2 giờ | `IDLE_ROOM_TTL_MS` |
+
+Dọn phòng chạy mỗi phút, huỷ luôn các timer của phòng. IP thật lấy từ `cf-connecting-ip` chỉ khi kết nối đến từ loopback (cloudflared), nên client ngoài không giả được.
+
+**Kiểm tra dữ liệu đầu vào:** tên sự kiện phải dạng `game:action`; payload bị từ chối nếu lồng quá 4 cấp, chuỗi > 256 ký tự, mảng > 64 phần tử, > 32 trường, dữ liệu nhị phân, hoặc có khoá `__proto__`/`constructor`. Callback giả (không phải hàm) không làm server lỗi (`ack(cb)`), và mọi handler được bọc try/catch nên payload lạ chỉ nhận `ok:false`. `tests/security.test.js` có fuzz test gửi 1.200 payload ngẫu nhiên tới mọi sự kiện của mọi game.
+
+**HTTP headers & CORS:** Content-Security-Policy (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`…; vẫn cần `'unsafe-inline'` cho script khởi động của Next.js), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, COOP/CORP, HSTS (chỉ có tác dụng qua HTTPS), tắt `X-Powered-By`. Socket.io chỉ nhận kết nối **cùng origin** (chặn cross-site WebSocket hijacking); thêm origin khác bằng `ALLOWED_ORIGINS=https://a.com,https://b.com`.
+
+**Giới hạn:** không có đăng nhập — ai có mã phòng đều vào được nếu phòng còn chỗ; bộ đếm giới hạn nằm trong RAM (khởi động lại là reset); lớp chặn DevTools (GuardShell) chỉ để răn đe.
+
 ## Test
 
 ```bash
@@ -66,6 +91,7 @@ node tests/pool-rules.test.js    # luật 8-ball + vật lý/xoáy
 node tests/wordle.test.js        # chấm màu chữ lặp, thắng/hòa
 node tests/domino.test.js        # chia bài, người đi trước, nối quân, bốc/qua lượt, chặn bài, giấu bài
 node tests/uno.test.js           # bộ 108 lá, chia bài, lá hợp lệ, thách đấu +4, phạt UNO, xáo lại, tính điểm, Đổi chiều 2 người
+node tests/security.test.js      # giới hạn tần suất, origin, dọn phòng, fuzz test (~2 phút)
 node tests/go.test.js            # bắt quân, cấm tự sát, Ko, 2 lần bỏ lượt, tính diện tích 9×9, đánh dấu quân chết, byo-yomi
 ```
 
@@ -75,6 +101,7 @@ node tests/go.test.js            # bắt quân, cấm tự sát, Ko, 2 lần b�
 server.js              # HTTP + Next + Socket.io, đăng ký các *-server.js (Caro nằm trong file này)
 chess-server.js  mines-server.js  pool-server.js  wordle-server.js  domino-server.js  uno-server.js  go-server.js
 room-kit.js            # create/join/ready/rematch/react/disconnect dùng chung
+security.js            # rate limit, giới hạn phòng, dọn phòng, kiểm tra payload, origin check
 data/                  # danh sách từ Wordle + giấy phép
 src/app/               # trang Next.js: / (chọn game), /game/<game> (lobby), /game/<game>/[code] (phòng)
 src/components/        # TopNav, BackLink, GameIcon, GameBackground, GuardShell, ChessPiece, DominoTile, UnoCard, Lobby, RoomKit

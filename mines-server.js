@@ -1,3 +1,4 @@
+const { ack } = require("./security");
 const DIFFICULTIES = {
   easy: { id: "easy", label: "Dễ", rows: 9, cols: 9, mines: 10 },
   medium: { id: "medium", label: "Vừa", rows: 12, cols: 12, mines: 25 },
@@ -368,28 +369,28 @@ function registerMines(io) {
       socket.join(room.code);
       socket.data.minesCode = room.code;
       socket.data.minesSeat = "host";
-      callback?.({ ok: true, seat: "host", room: publicRoom(room, socket.id) });
+      ack(callback)({ ok: true, seat: "host", room: publicRoom(room, socket.id) });
     });
 
     socket.on("mines:join", (code, cb) => {
       const normalized = String(code || "").trim().toUpperCase();
       const room = minesRooms.get(normalized);
       if (!room) {
-        cb?.({ ok: false, error: "Không tìm thấy phòng." });
+        ack(cb)({ ok: false, error: "Không tìm thấy phòng." });
         return;
       }
       if (room.hostId === socket.id) {
         socket.join(normalized);
         socket.data.minesCode = normalized;
         socket.data.minesSeat = "host";
-        cb?.({ ok: true, seat: "host", room: publicRoom(room, socket.id) });
+        ack(cb)({ ok: true, seat: "host", room: publicRoom(room, socket.id) });
         return;
       }
       if (room.guestId === socket.id) {
         socket.join(normalized);
         socket.data.minesCode = normalized;
         socket.data.minesSeat = "guest";
-        cb?.({ ok: true, seat: "guest", room: publicRoom(room, socket.id) });
+        ack(cb)({ ok: true, seat: "guest", room: publicRoom(room, socket.id) });
         return;
       }
       if (!room.hostId) {
@@ -400,12 +401,12 @@ function registerMines(io) {
         socket.data.minesSeat = "host";
         clearCountdown(room);
         if (room.phase !== "finished") room.phase = "lobby";
-        cb?.({ ok: true, seat: "host", room: publicRoom(room, socket.id) });
+        ack(cb)({ ok: true, seat: "host", room: publicRoom(room, socket.id) });
         emitRoom(io, room);
         return;
       }
       if (room.guestId && room.guestId !== socket.id) {
-        cb?.({ ok: false, error: "Phòng đã đủ 2 người." });
+        ack(cb)({ ok: false, error: "Phòng đã đủ 2 người." });
         return;
       }
       room.guestId = socket.id;
@@ -419,7 +420,7 @@ function registerMines(io) {
         room.hostReady = false;
         room.guestReady = false;
       }
-      cb?.({ ok: true, seat: "guest", room: publicRoom(room, socket.id) });
+      ack(cb)({ ok: true, seat: "guest", room: publicRoom(room, socket.id) });
       emitRoom(io, room);
     });
 
@@ -427,26 +428,26 @@ function registerMines(io) {
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = seatOf(room, socket.id);
-      cb?.({ ok: true, seat, room: publicRoom(room, socket.id) });
+      ack(cb)({ ok: true, seat, room: publicRoom(room, socket.id) });
     });
 
     socket.on("mines:set-diff", (difficulty, cb) => {
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (socket.id !== room.hostId) {
-        cb?.({ ok: false, error: "Chỉ Host được đổi độ khó." });
+        ack(cb)({ ok: false, error: "Chỉ Host được đổi độ khó." });
         return;
       }
       if (room.phase === "playing" || room.phase === "countdown") {
-        cb?.({ ok: false, error: "Không đổi độ khó khi đang chơi." });
+        ack(cb)({ ok: false, error: "Không đổi độ khó khi đang chơi." });
         return;
       }
       applyDiff(room, difficulty);
@@ -456,27 +457,27 @@ function registerMines(io) {
       room.winner = null;
       room.endReason = null;
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room, socket.id) });
+      ack(cb)({ ok: true, room: publicRoom(room, socket.id) });
     });
 
     socket.on("mines:ready", (ready, cb) => {
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (room.phase === "finished") {
-        cb?.({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
+        ack(cb)({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
         return;
       }
       if (room.phase === "playing" || room.phase === "countdown") {
-        cb?.({ ok: false, error: "Đang trong ván." });
+        ack(cb)({ ok: false, error: "Đang trong ván." });
         return;
       }
       const seat = seatOf(room, socket.id);
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (seat === "host") room.hostReady = Boolean(ready);
@@ -489,42 +490,43 @@ function registerMines(io) {
         room.phase = "lobby";
         emitRoom(io, room);
       }
-      cb?.({ ok: true, room: publicRoom(room, socket.id) });
+      ack(cb)({ ok: true, room: publicRoom(room, socket.id) });
     });
 
-    socket.on("mines:open", ({ row, col }, cb) => {
+    socket.on("mines:open", (payload, cb) => {
+      const { row, col } = payload && typeof payload === "object" ? payload : {};
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (room.phase !== "playing") {
-        cb?.({ ok: false, error: "Chưa bắt đầu." });
+        ack(cb)({ ok: false, error: "Chưa bắt đầu." });
         return;
       }
       const seat = seatOf(room, socket.id);
       const player = playerOf(room, seat);
       if (!player) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (player.hitMine || player.cleared) {
-        cb?.({ ok: false, error: "Bạn đã kết thúc ván." });
+        ack(cb)({ ok: false, error: "Bạn đã kết thúc ván." });
         return;
       }
       const r = Number(row);
       const c = Number(col);
       if (!inBounds(room, r, c)) {
-        cb?.({ ok: false, error: "Ô không hợp lệ." });
+        ack(cb)({ ok: false, error: "Ô không hợp lệ." });
         return;
       }
       if (player.flagged[r][c]) {
-        cb?.({ ok: false, error: "Ô đang cắm cờ." });
+        ack(cb)({ ok: false, error: "Ô đang cắm cờ." });
         return;
       }
       if (player.revealed[r][c]) {
-        cb?.({ ok: false, error: "Ô đã mở." });
+        ack(cb)({ ok: false, error: "Ô đã mở." });
         return;
       }
 
@@ -538,7 +540,7 @@ function registerMines(io) {
         player.finishedAt = Date.now();
         checkRaceEnd(room);
         emitRoom(io, room);
-        cb?.({ ok: true, room: publicRoom(room, socket.id) });
+        ack(cb)({ ok: true, room: publicRoom(room, socket.id) });
         return;
       }
 
@@ -549,43 +551,44 @@ function registerMines(io) {
       }
       checkRaceEnd(room);
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room, socket.id) });
+      ack(cb)({ ok: true, room: publicRoom(room, socket.id) });
     });
 
-    socket.on("mines:flag", ({ row, col }, cb) => {
+    socket.on("mines:flag", (payload, cb) => {
+      const { row, col } = payload && typeof payload === "object" ? payload : {};
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (room.phase !== "playing") {
-        cb?.({ ok: false, error: "Chưa bắt đầu." });
+        ack(cb)({ ok: false, error: "Chưa bắt đầu." });
         return;
       }
       const seat = seatOf(room, socket.id);
       const player = playerOf(room, seat);
       if (!player) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (player.hitMine || player.cleared) {
-        cb?.({ ok: false, error: "Bạn đã kết thúc ván." });
+        ack(cb)({ ok: false, error: "Bạn đã kết thúc ván." });
         return;
       }
       const r = Number(row);
       const c = Number(col);
       if (!inBounds(room, r, c)) {
-        cb?.({ ok: false, error: "Ô không hợp lệ." });
+        ack(cb)({ ok: false, error: "Ô không hợp lệ." });
         return;
       }
       if (player.revealed[r][c]) {
-        cb?.({ ok: false, error: "Ô đã mở." });
+        ack(cb)({ ok: false, error: "Ô đã mở." });
         return;
       }
       player.flagged[r][c] = !player.flagged[r][c];
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room, socket.id) });
+      ack(cb)({ ok: true, room: publicRoom(room, socket.id) });
     });
 
     socket.on("mines:rematch", (payload, cb) => {
@@ -599,7 +602,7 @@ function registerMines(io) {
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        callback?.({ ok: false, error: "Chưa vào phòng." });
+        ack(callback)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (socket.id === room.hostId && difficulty) {
@@ -607,28 +610,28 @@ function registerMines(io) {
       }
       resetRound(room, true);
       emitRoom(io, room);
-      callback?.({ ok: true, room: publicRoom(room, socket.id) });
+      ack(callback)({ ok: true, room: publicRoom(room, socket.id) });
     });
 
     socket.on("mines:react", (emoji, cb) => {
       const code = socket.data.minesCode;
       const room = code ? minesRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = seatOf(room, socket.id);
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       const allowed = ["thumbsup", "laugh", "wow", "fire", "cry", "party", "clap", "heart"];
       if (!allowed.includes(emoji)) {
-        cb?.({ ok: false, error: "Emoji không hợp lệ." });
+        ack(cb)({ ok: false, error: "Emoji không hợp lệ." });
         return;
       }
       io.to(code).emit("mines:reaction", { emoji, seat, at: Date.now() });
-      cb?.({ ok: true });
+      ack(cb)({ ok: true });
     });
 
     socket.on("disconnect", () => {
@@ -663,4 +666,4 @@ function registerMines(io) {
   });
 }
 
-module.exports = { registerMines };
+module.exports = { registerMines, rooms: minesRooms };

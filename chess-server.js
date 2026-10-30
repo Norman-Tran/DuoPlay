@@ -1,3 +1,4 @@
+const { ack } = require("./security");
 const { Chess } = require("chess.js");
 
 /**
@@ -339,19 +340,19 @@ function registerChess(io) {
       socket.join(room.code);
       socket.data.chessCode = room.code;
       socket.data.chessSeat = "host";
-      cb?.({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
+      ack(cb)({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
     });
 
     socket.on("chess:join", (code, cb) => {
       const normalized = String(code || "").trim().toUpperCase();
       const room = chessRooms.get(normalized);
       if (!room) {
-        cb?.({ ok: false, error: "Không tìm thấy phòng." });
+        ack(cb)({ ok: false, error: "Không tìm thấy phòng." });
         return;
       }
       if (room.guestId && room.guestId !== socket.id && room.hostId !== socket.id) {
         if (room.hostId && room.guestId) {
-          cb?.({ ok: false, error: "Phòng đã đủ 2 người." });
+          ack(cb)({ ok: false, error: "Phòng đã đủ 2 người." });
           return;
         }
       }
@@ -364,7 +365,7 @@ function registerChess(io) {
         socket.data.chessSeat = "host";
         settleClock(room);
         clearTurnTimer(room);
-        cb?.({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
+        ack(cb)({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
         emitRoom(io, room);
         return;
       }
@@ -372,7 +373,7 @@ function registerChess(io) {
         socket.join(normalized);
         socket.data.chessCode = normalized;
         socket.data.chessSeat = "host";
-        cb?.({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
+        ack(cb)({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
         return;
       }
       room.guestId = socket.id;
@@ -383,7 +384,7 @@ function registerChess(io) {
       socket.data.chessSeat = "guest";
       settleClock(room);
       clearTurnTimer(room);
-      cb?.({ ok: true, seat: "guest", color: "black", room: publicRoom(room) });
+      ack(cb)({ ok: true, seat: "guest", color: "black", room: publicRoom(room) });
       emitRoom(io, room);
     });
 
@@ -391,28 +392,28 @@ function registerChess(io) {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = socket.id === room.hostId ? "host" : socket.id === room.guestId ? "guest" : null;
       const color = seat === "host" ? "white" : seat === "guest" ? "black" : null;
-      cb?.({ ok: true, seat, color, room: publicRoom(room) });
+      ack(cb)({ ok: true, seat, color, room: publicRoom(room) });
     });
 
     socket.on("chess:ready", (ready, cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (room.winner) {
-        cb?.({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
+        ack(cb)({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
         return;
       }
       const seat = socket.id === room.hostId ? "host" : socket.id === room.guestId ? "guest" : null;
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (seat === "host") room.hostReady = Boolean(ready);
@@ -426,19 +427,20 @@ function registerChess(io) {
         room.drawOfferFrom = null;
       }
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:moves", (from, cb) => {
+      if (typeof from !== "string" || !/^[a-h][1-8]$/.test(from)) return ack(cb)({ ok: false, moves: [] });
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room || !gameActive(room)) {
-        cb?.({ ok: false, moves: [] });
+        ack(cb)({ ok: false, moves: [] });
         return;
       }
       const color = markForSocket(room, socket.id);
       if (!color || color !== currentMark(room)) {
-        cb?.({ ok: false, moves: [] });
+        ack(cb)({ ok: false, moves: [] });
         return;
       }
       const moves = room.game.moves({ square: from, verbose: true }).map((m) => ({
@@ -447,152 +449,152 @@ function registerChess(io) {
         promotion: m.promotion || null,
         san: m.san,
       }));
-      cb?.({ ok: true, moves });
+      ack(cb)({ ok: true, moves });
     });
 
     socket.on("chess:move", (payload, cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (!bothReady(room)) {
-        cb?.({ ok: false, error: "Chờ cả hai sẵn sàng (Ready)." });
+        ack(cb)({ ok: false, error: "Chờ cả hai sẵn sàng (Ready)." });
         return;
       }
       if (room.winner) {
-        cb?.({ ok: false, error: "Ván đã kết thúc." });
+        ack(cb)({ ok: false, error: "Ván đã kết thúc." });
         return;
       }
       const color = markForSocket(room, socket.id);
       if (!color) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (color !== currentMark(room)) {
-        cb?.({ ok: false, error: "Chưa tới lượt của bạn." });
+        ack(cb)({ ok: false, error: "Chưa tới lượt của bạn." });
         return;
       }
       const { from, to, promotion } = payload || {};
       const res = applyMove(io, room, { from, to, promotion: promotion || "q" });
       if (!res.ok) {
-        cb?.({ ok: false, error: res.error });
+        ack(cb)({ ok: false, error: res.error });
         return;
       }
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:resign", (cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (!gameActive(room)) {
-        cb?.({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
+        ack(cb)({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
         return;
       }
       const color = markForSocket(room, socket.id);
       if (!color) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       endByResign(room, color);
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:draw-offer", (cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (!gameActive(room)) {
-        cb?.({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
+        ack(cb)({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
         return;
       }
       const color = markForSocket(room, socket.id);
       if (!color) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       // Toggle cancel if this player already offered
       if (room.drawOfferFrom === color) {
         room.drawOfferFrom = null;
         emitRoom(io, room);
-        cb?.({ ok: true, room: publicRoom(room), cancelled: true });
+        ack(cb)({ ok: true, room: publicRoom(room), cancelled: true });
         return;
       }
       // One pending offer at a time — ignore if opponent already offered
       if (room.drawOfferFrom && room.drawOfferFrom !== color) {
-        cb?.({ ok: false, error: "Đối thủ đang xin hòa. Hãy chấp nhận hoặc từ chối." });
+        ack(cb)({ ok: false, error: "Đối thủ đang xin hòa. Hãy chấp nhận hoặc từ chối." });
         return;
       }
       room.drawOfferFrom = color;
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:draw-accept", (cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (!gameActive(room)) {
-        cb?.({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
+        ack(cb)({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
         return;
       }
       const color = markForSocket(room, socket.id);
       if (!color) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (!room.drawOfferFrom || room.drawOfferFrom === color) {
-        cb?.({ ok: false, error: "Không có lời xin hòa từ đối thủ." });
+        ack(cb)({ ok: false, error: "Không có lời xin hòa từ đối thủ." });
         return;
       }
       endByAgreement(room);
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:draw-decline", (cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (!gameActive(room)) {
-        cb?.({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
+        ack(cb)({ ok: false, error: "Ván chưa đang chơi hoặc đã kết thúc." });
         return;
       }
       const color = markForSocket(room, socket.id);
       if (!color) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (!room.drawOfferFrom || room.drawOfferFrom === color) {
-        cb?.({ ok: false, error: "Không có lời xin hòa từ đối thủ." });
+        ack(cb)({ ok: false, error: "Không có lời xin hòa từ đối thủ." });
         return;
       }
       room.drawOfferFrom = null;
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:rematch", (cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       clearTurnTimer(room);
@@ -606,29 +608,29 @@ function registerChess(io) {
       room.hostReady = false;
       room.guestReady = false;
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("chess:react", (emoji, cb) => {
       const code = socket.data.chessCode;
       const room = code ? chessRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = socket.id === room.hostId ? "host" : socket.id === room.guestId ? "guest" : null;
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       const allowed = ["thumbsup", "laugh", "wow", "fire", "cry", "party", "clap", "heart"];
       if (!allowed.includes(emoji)) {
-        cb?.({ ok: false, error: "Emoji không hợp lệ." });
+        ack(cb)({ ok: false, error: "Emoji không hợp lệ." });
         return;
       }
       const color = seat === "host" ? "white" : "black";
       io.to(code).emit("chess:reaction", { emoji, seat, color, at: Date.now() });
-      cb?.({ ok: true });
+      ack(cb)({ ok: true });
     });
 
     socket.on("disconnect", () => {
@@ -661,6 +663,7 @@ function registerChess(io) {
 
 module.exports = {
   registerChess,
+  rooms: chessRooms,
   TIME_CONTROLS,
   _test: { newRoom, applyMove, onFlag, hasMatingMaterial, startTurnTimer, settleClock, clearTurnTimer, publicRoom },
 };

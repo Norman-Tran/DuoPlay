@@ -1,3 +1,4 @@
+const { ack } = require("./security");
 /**
  * DuoPlay — 8-ball pool (bida lỗ) server module.
  * Server-authoritative 2D circle physics; client sends {angle, power}.
@@ -1121,28 +1122,28 @@ function registerPool(io) {
       socket.join(room.code);
       socket.data.poolCode = room.code;
       socket.data.poolSeat = "host";
-      callback?.({ ok: true, seat: "host", color: "A", room: publicRoom(room) });
+      ack(callback)({ ok: true, seat: "host", color: "A", room: publicRoom(room) });
     });
 
     socket.on("pool:join", (code, cb) => {
       const normalized = String(code || "").trim().toUpperCase();
       const room = poolRooms.get(normalized);
       if (!room) {
-        cb?.({ ok: false, error: "Không tìm thấy phòng." });
+        ack(cb)({ ok: false, error: "Không tìm thấy phòng." });
         return;
       }
       if (room.hostId === socket.id) {
         socket.join(normalized);
         socket.data.poolCode = normalized;
         socket.data.poolSeat = "host";
-        cb?.({ ok: true, seat: "host", color: "A", room: publicRoom(room) });
+        ack(cb)({ ok: true, seat: "host", color: "A", room: publicRoom(room) });
         return;
       }
       if (room.guestId === socket.id) {
         socket.join(normalized);
         socket.data.poolCode = normalized;
         socket.data.poolSeat = "guest";
-        cb?.({ ok: true, seat: "guest", color: "B", room: publicRoom(room) });
+        ack(cb)({ ok: true, seat: "guest", color: "B", room: publicRoom(room) });
         return;
       }
       if (!room.hostId) {
@@ -1153,12 +1154,12 @@ function registerPool(io) {
         socket.data.poolSeat = "host";
         clearTurnTimer(room);
         if (room.phase !== "finished") room.phase = "lobby";
-        cb?.({ ok: true, seat: "host", color: "A", room: publicRoom(room) });
+        ack(cb)({ ok: true, seat: "host", color: "A", room: publicRoom(room) });
         emitRoom(io, room);
         return;
       }
       if (room.guestId && room.guestId !== socket.id) {
-        cb?.({ ok: false, error: "Phòng đã đủ 2 người." });
+        ack(cb)({ ok: false, error: "Phòng đã đủ 2 người." });
         return;
       }
       room.guestId = socket.id;
@@ -1169,7 +1170,7 @@ function registerPool(io) {
       if (room.phase === "playing" || room.phase === "animating" || room.phase === "ball_in_hand") {
         // Don't yank mid-game harshly — keep state but require rematch if someone rejoins mid? Keep as is.
       }
-      cb?.({ ok: true, seat: "guest", color: "B", room: publicRoom(room) });
+      ack(cb)({ ok: true, seat: "guest", color: "B", room: publicRoom(room) });
       emitRoom(io, room);
     });
 
@@ -1177,11 +1178,11 @@ function registerPool(io) {
       const code = socket.data.poolCode;
       const room = code ? poolRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = seatOf(room, socket.id);
-      cb?.({
+      ack(cb)({
         ok: true,
         seat,
         color: colorOfSeat(seat),
@@ -1193,20 +1194,20 @@ function registerPool(io) {
       const code = socket.data.poolCode;
       const room = code ? poolRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       if (room.phase === "finished") {
-        cb?.({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
+        ack(cb)({ ok: false, error: "Ván đã kết thúc. Hãy chơi lại." });
         return;
       }
       if (room.phase === "playing" || room.phase === "animating" || room.phase === "ball_in_hand") {
-        cb?.({ ok: false, error: "Đang trong ván." });
+        ack(cb)({ ok: false, error: "Đang trong ván." });
         return;
       }
       const seat = seatOf(room, socket.id);
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       if (seat === "host") room.hostReady = Boolean(ready);
@@ -1217,7 +1218,7 @@ function registerPool(io) {
       } else {
         emitRoom(io, room);
       }
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("pool:aim-preview", () => {
@@ -1253,36 +1254,37 @@ function registerPool(io) {
       socket.to(code).emit("pool:place-move", { x, y, valid: isValidCuePlacement(room, x, y), active: Boolean(payload?.active) });
     });
 
-    socket.on("pool:place-cue", ({ x, y }, cb) => {
+    socket.on("pool:place-cue", (payload, cb) => {
+      const { x, y } = payload && typeof payload === "object" ? payload : {};
       const code = socket.data.poolCode;
       const room = code ? poolRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = seatOf(room, socket.id);
       const color = colorOfSeat(seat);
       if (!color || color !== room.turn) {
-        cb?.({ ok: false, error: "Chưa tới lượt bạn." });
+        ack(cb)({ ok: false, error: "Chưa tới lượt bạn." });
         return;
       }
       if ((room.phase !== "ball_in_hand" && room.phase !== "playing") || !room.ballInHand || room.cueLocked) {
-        cb?.({ ok: false, error: "Không được đặt bi chủ lúc này." });
+        ack(cb)({ ok: false, error: "Không được đặt bi chủ lúc này." });
         return;
       }
       if (room.simRunning) {
-        cb?.({ ok: false, error: "Đang mô phỏng." });
+        ack(cb)({ ok: false, error: "Đang mô phỏng." });
         return;
       }
       const px = Number(x);
       const py = Number(y);
       if (!isValidCuePlacement(room, px, py)) {
-        cb?.({ ok: false, error: "Vị trí không hợp lệ." });
+        ack(cb)({ ok: false, error: "Vị trí không hợp lệ." });
         return;
       }
       const cue = findBall(room, 0);
       if (!cue) {
-        cb?.({ ok: false, error: "Không có bi chủ." });
+        ack(cb)({ ok: false, error: "Không có bi chủ." });
         return;
       }
       cue.x = px;
@@ -1294,36 +1296,37 @@ function registerPool(io) {
       room.lastEvent = { type: "place", message: "Đã đặt bi chủ", at: Date.now() };
       // Keep same turn timer running
       emitRoom(io, room);
-      cb?.({ ok: true, room: publicRoom(room) });
+      ack(cb)({ ok: true, room: publicRoom(room) });
     });
 
-    socket.on("pool:shoot", ({ angle, power, spin }, cb) => {
+    socket.on("pool:shoot", (payload, cb) => {
+      const { angle, power, spin } = payload && typeof payload === "object" ? payload : {};
       const code = socket.data.poolCode;
       const room = code ? poolRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = seatOf(room, socket.id);
       const color = colorOfSeat(seat);
       if (!color || color !== room.turn) {
-        cb?.({ ok: false, error: "Chưa tới lượt bạn." });
+        ack(cb)({ ok: false, error: "Chưa tới lượt bạn." });
         return;
       }
       if (room.phase === "ball_in_hand") {
-        cb?.({ ok: false, error: "Hãy đặt bi chủ trước." });
+        ack(cb)({ ok: false, error: "Hãy đặt bi chủ trước." });
         return;
       }
       if (room.phase !== "playing") {
-        cb?.({ ok: false, error: "Chưa đến lúc bắn." });
+        ack(cb)({ ok: false, error: "Chưa đến lúc bắn." });
         return;
       }
       if (room.simRunning || room.winner) {
-        cb?.({ ok: false, error: "Không thể bắn lúc này." });
+        ack(cb)({ ok: false, error: "Không thể bắn lúc này." });
         return;
       }
       if (!bothReady(room) && room.phase === "lobby") {
-        cb?.({ ok: false, error: "Chưa sẵn sàng." });
+        ack(cb)({ ok: false, error: "Chưa sẵn sàng." });
         return;
       }
       const ok = applyShot(room, angle, power, spin);
@@ -1332,10 +1335,10 @@ function registerPool(io) {
         room.cueLocked = false;
       }
       if (!ok) {
-        cb?.({ ok: false, error: "Góc/lực không hợp lệ." });
+        ack(cb)({ ok: false, error: "Góc/lực không hợp lệ." });
         return;
       }
-      cb?.({ ok: true });
+      ack(cb)({ ok: true });
       runSimulation(io, room);
     });
 
@@ -1344,29 +1347,29 @@ function registerPool(io) {
       const code = socket.data.poolCode;
       const room = code ? poolRooms.get(code) : null;
       if (!room) {
-        callback?.({ ok: false, error: "Chưa vào phòng." });
+        ack(callback)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       resetRound(room, true);
       emitRoom(io, room);
-      callback?.({ ok: true, room: publicRoom(room) });
+      ack(callback)({ ok: true, room: publicRoom(room) });
     });
 
     socket.on("pool:react", (emoji, cb) => {
       const code = socket.data.poolCode;
       const room = code ? poolRooms.get(code) : null;
       if (!room) {
-        cb?.({ ok: false, error: "Chưa vào phòng." });
+        ack(cb)({ ok: false, error: "Chưa vào phòng." });
         return;
       }
       const seat = seatOf(room, socket.id);
       if (!seat) {
-        cb?.({ ok: false, error: "Bạn không trong phòng." });
+        ack(cb)({ ok: false, error: "Bạn không trong phòng." });
         return;
       }
       const allowed = ["thumbsup", "laugh", "wow", "fire", "cry", "party", "clap", "heart"];
       if (!allowed.includes(emoji)) {
-        cb?.({ ok: false, error: "Emoji không hợp lệ." });
+        ack(cb)({ ok: false, error: "Emoji không hợp lệ." });
         return;
       }
       io.to(code).emit("pool:reaction", {
@@ -1375,7 +1378,7 @@ function registerPool(io) {
         color: colorOfSeat(seat),
         at: Date.now(),
       });
-      cb?.({ ok: true });
+      ack(cb)({ ok: true });
     });
 
     socket.on("disconnect", () => {
@@ -1418,6 +1421,7 @@ function registerPool(io) {
 
 module.exports = {
   registerPool,
+  rooms: poolRooms,
   TABLE_W,
   TABLE_H,
   BALL_R,

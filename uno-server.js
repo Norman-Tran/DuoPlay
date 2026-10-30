@@ -289,5 +289,6 @@ const kit = createRoomKit("uno", {
 
 module.exports = {
   registerUno: kit.register,
+  rooms: kit.rooms,
   _test: { buildDeck, dealRound, newGame, play, drawCard, keep, respondWd4, pickColor, callUno, catchUno, nextRound, view, isPlayable, handPoints, cardPoints, reshuffle },
 };
