@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { GAMES } from "@/lib/games";
+import GameIcon from "@/components/GameIcon";
 
 export default function HomePage() {
   return (
@@ -17,18 +19,19 @@ export default function HomePage() {
       <section>
         <h2 className="mb-4 text-lg font-semibold text-slate-200">Chọn game</h2>
         <ul className="grid gap-4 sm:grid-cols-2">
-          {GAMES.map((game) => {
+          {GAMES.map((game, idx) => {
+            const style = { "--glow": game.glow, animationDelay: `${idx * 80}ms` } as CSSProperties;
             const card = (
               <div
-                className={`rounded-2xl border p-5 transition ${
+                className={`h-full rounded-2xl border p-5 transition-colors duration-200 ${
                   game.status === "playable"
-                    ? "border-cyan-700/50 bg-slate-900/80 hover:border-cyan-400/70 hover:bg-slate-900"
+                    ? "border-slate-700/70 bg-slate-900/80 group-hover:bg-slate-900"
                     : "border-slate-800 bg-slate-900/40 opacity-70"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-3xl">{game.emoji}</div>
+                    <GameIcon id={game.id} />
                     <h3 className="mt-2 text-lg font-semibold">{game.name}</h3>
                     <p className="mt-1 text-sm text-slate-400">{game.blurb}</p>
                   </div>
@@ -47,17 +50,18 @@ export default function HomePage() {
 
             if (game.status === "playable" && game.href) {
               return (
-                <li key={game.id}>
-                  <Link
-                    href={game.href}
-                    className="block rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
-                  >
+                <li key={game.id} className="card-enter" style={style}>
+                  <Link href={game.href} className="card-fx group h-full" style={style}>
                     {card}
                   </Link>
                 </li>
               );
             }
-            return <li key={game.id}>{card}</li>;
+            return (
+              <li key={game.id} className="card-enter group" style={style}>
+                {card}
+              </li>
+            );
           })}
         </ul>
       </section>

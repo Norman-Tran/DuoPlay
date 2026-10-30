@@ -1190,7 +1190,7 @@ export default function PoolRoomPage() {
           <button
             type="button"
             onClick={toggleReady}
-            className={`rounded-xl px-4 py-2 font-semibold ${
+            className={`btn-fx rounded-xl px-4 py-2 font-semibold ${
               myReady
                 ? "bg-emerald-500 text-slate-950"
                 : "bg-cyan-500 text-slate-950 hover:bg-cyan-400"
@@ -1233,7 +1233,7 @@ export default function PoolRoomPage() {
           <button
             type="button"
             onClick={rematch}
-            className="rounded-xl bg-cyan-500 px-4 py-2 font-semibold text-slate-950 hover:bg-cyan-400"
+            className="btn-fx rounded-xl bg-cyan-500 px-4 py-2 font-semibold text-slate-950 hover:bg-cyan-400"
           >
             Chơi lại
           </button>
@@ -1246,7 +1246,7 @@ export default function PoolRoomPage() {
             key={r.id}
             type="button"
             onClick={() => sendReact(r.id)}
-            className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-1 text-lg hover:border-cyan-600"
+            className="btn-fx rounded-lg border border-slate-800 bg-slate-900 px-2 py-1 text-lg hover:border-cyan-600"
             title={r.id}
           >
             {r.label}
@@ -1926,14 +1926,14 @@ function SpinPicker({
             <div className="mt-3 flex justify-center gap-2">
               <button
                 type="button"
-                className="rounded-lg border border-slate-600 px-3 py-1 text-sm hover:border-cyan-500"
+                className="btn-fx rounded-lg border border-slate-600 px-3 py-1 text-sm hover:border-cyan-500"
                 onClick={() => onChange({ a: 0, b: 0 })}
               >
                 Đặt lại giữa
               </button>
               <button
                 type="button"
-                className="rounded-lg bg-cyan-500 px-3 py-1 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
+                className="btn-fx rounded-lg bg-cyan-500 px-3 py-1 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
                 onClick={onClose}
               >
                 Xong

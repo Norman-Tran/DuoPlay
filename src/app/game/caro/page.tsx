@@ -85,7 +85,7 @@ export default function CaroLobbyPage() {
               key={s}
               type="button"
               onClick={() => setSize(s)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold border ${
+              className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold border ${
                 size === s
                   ? "border-cyan-400 bg-cyan-500 text-slate-950"
                   : "border-slate-700 bg-slate-950 text-slate-300 hover:border-cyan-600"
@@ -99,7 +99,7 @@ export default function CaroLobbyPage() {
           type="button"
           disabled={busy}
           onClick={createRoom}
-          className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
+          className="btn-fx w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
         >
           Tạo phòng {size}×{size}
         </button>
@@ -121,7 +121,7 @@ export default function CaroLobbyPage() {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-fuchsia-500 px-5 font-semibold text-white hover:bg-fuchsia-400 disabled:opacity-50"
+          className="btn-fx rounded-xl bg-fuchsia-500 px-5 font-semibold text-white hover:bg-fuchsia-400 disabled:opacity-50"
         >
           Vào
         </button>

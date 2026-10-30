@@ -84,7 +84,7 @@ export default function PoolLobbyPage() {
           type="button"
           disabled={busy}
           onClick={createRoom}
-          className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
+          className="btn-fx w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
         >
           Tạo phòng mới
         </button>
@@ -106,7 +106,7 @@ export default function PoolLobbyPage() {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-xl bg-fuchsia-400 px-5 font-semibold text-white hover:bg-fuchsia-400 disabled:opacity-50"
+          className="btn-fx rounded-xl bg-fuchsia-400 px-5 font-semibold text-white hover:bg-fuchsia-400 disabled:opacity-50"
         >
           Vào
         </button>

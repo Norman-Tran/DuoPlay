@@ -459,7 +459,7 @@ export default function ChessRoomPage() {
         <button
           type="button"
           onClick={copyCode}
-          className="rounded-xl border border-slate-700 px-3 py-2 text-sm hover:border-cyan-500"
+          className="btn-fx rounded-xl border border-slate-700 px-3 py-2 text-sm hover:border-cyan-500"
         >
           {copied ? "Đã copy!" : "Copy mã phòng"}
         </button>
@@ -501,7 +501,7 @@ export default function ChessRoomPage() {
           <button
             type="button"
             onClick={toggleReady}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+            className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold ${
               myReady
                 ? "border border-emerald-500 bg-emerald-950 text-emerald-200"
                 : "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
@@ -518,7 +518,7 @@ export default function ChessRoomPage() {
             type="button"
             disabled={actionBusy}
             onClick={resign}
-            className="rounded-xl border border-rose-500/60 bg-rose-950/50 px-4 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-900/60 disabled:opacity-50"
+            className="btn-fx rounded-xl border border-rose-500/60 bg-rose-950/50 px-4 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-900/60 disabled:opacity-50"
           >
             Xin thua
           </button>
@@ -527,7 +527,7 @@ export default function ChessRoomPage() {
               type="button"
               disabled={actionBusy}
               onClick={offerOrCancelDraw}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
+              className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
                 iOfferedDraw
                   ? "border border-amber-500/60 bg-amber-950/40 text-amber-100 hover:bg-amber-900/50"
                   : "border border-sky-500/50 bg-sky-950/40 text-sky-100 hover:bg-sky-900/50"
@@ -543,7 +543,7 @@ export default function ChessRoomPage() {
                 type="button"
                 disabled={actionBusy}
                 onClick={acceptDraw}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+                className="btn-fx rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
               >
                 Chấp nhận hòa
               </button>
@@ -551,7 +551,7 @@ export default function ChessRoomPage() {
                 type="button"
                 disabled={actionBusy}
                 onClick={declineDraw}
-                className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-slate-400 disabled:opacity-50"
+                className="btn-fx rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-slate-400 disabled:opacity-50"
               >
                 Từ chối
               </button>
@@ -692,7 +692,7 @@ export default function ChessRoomPage() {
                   key={p}
                   type="button"
                   onClick={() => doMove(promo.from, promo.to, p)}
-                  className="rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
+                  className="btn-fx rounded-xl bg-cyan-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
                 >
                   {label}
                 </button>
@@ -700,7 +700,7 @@ export default function ChessRoomPage() {
               <button
                 type="button"
                 onClick={() => setPromo(null)}
-                className="rounded-xl border border-slate-600 px-3 py-2 text-sm text-slate-300"
+                className="btn-fx rounded-xl border border-slate-600 px-3 py-2 text-sm text-slate-300"
               >
                 Huỷ
               </button>
@@ -717,7 +717,7 @@ export default function ChessRoomPage() {
               key={r.id}
               type="button"
               onClick={() => sendReact(r.id)}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xl hover:border-cyan-500"
+              className="btn-fx rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xl hover:border-cyan-500"
             >
               {r.label}
             </button>
@@ -731,7 +731,7 @@ export default function ChessRoomPage() {
           <button
             type="button"
             onClick={rematch}
-            className="rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
+            className="btn-fx rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
           >
             Chơi lại
           </button>

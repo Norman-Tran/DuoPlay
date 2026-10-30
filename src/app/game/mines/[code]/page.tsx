@@ -350,7 +350,7 @@ export default function MinesRoomPage() {
                 key={d.id}
                 type="button"
                 onClick={() => setDiff(d.id)}
-                className={`rounded-xl border px-3 py-1.5 text-sm font-semibold ${
+                className={`btn-fx rounded-xl border px-3 py-1.5 text-sm font-semibold ${
                   room.difficulty === d.id
                     ? "border-cyan-400 bg-cyan-500 text-slate-950"
                     : "border-slate-700 bg-slate-950 text-slate-300 hover:border-cyan-600"
@@ -371,7 +371,7 @@ export default function MinesRoomPage() {
           <button
             type="button"
             onClick={toggleReady}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+            className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold ${
               myReady
                 ? "border border-emerald-500 bg-emerald-950 text-emerald-200"
                 : "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
@@ -425,7 +425,7 @@ export default function MinesRoomPage() {
           <button
             type="button"
             onClick={() => setFlagMode(false)}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+            className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold ${
               !flagMode
                 ? "bg-cyan-500 text-slate-950"
                 : "border border-slate-700 bg-slate-950 text-slate-300"
@@ -436,7 +436,7 @@ export default function MinesRoomPage() {
           <button
             type="button"
             onClick={() => setFlagMode(true)}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+            className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold ${
               flagMode
                 ? "bg-amber-500 text-slate-950"
                 : "border border-slate-700 bg-slate-950 text-slate-300"
@@ -519,7 +519,7 @@ export default function MinesRoomPage() {
               key={r.id}
               type="button"
               onClick={() => sendReact(r.id)}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xl hover:border-cyan-500"
+              className="btn-fx rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xl hover:border-cyan-500"
             >
               {r.label}
             </button>
@@ -534,7 +534,7 @@ export default function MinesRoomPage() {
           <button
             type="button"
             onClick={rematch}
-            className="rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
+            className="btn-fx rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
           >
             Chơi lại
           </button>

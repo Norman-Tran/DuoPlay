@@ -293,7 +293,7 @@ export default function CaroRoomPage() {
         <button
           type="button"
           onClick={copyCode}
-          className="rounded-xl border border-slate-700 px-3 py-2 text-sm hover:border-cyan-500"
+          className="btn-fx rounded-xl border border-slate-700 px-3 py-2 text-sm hover:border-cyan-500"
         >
           {copied ? "Đã copy!" : "Copy mã phòng"}
         </button>
@@ -346,7 +346,7 @@ export default function CaroRoomPage() {
           <button
             type="button"
             onClick={toggleReady}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+            className={`btn-fx rounded-xl px-4 py-2 text-sm font-semibold ${
               myReady
                 ? "border border-emerald-500 bg-emerald-950 text-emerald-200"
                 : "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
@@ -449,7 +449,7 @@ export default function CaroRoomPage() {
               key={r.id}
               type="button"
               onClick={() => sendReact(r.id)}
-              className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xl hover:border-cyan-500 hover:bg-slate-900"
+              className="btn-fx rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xl hover:border-cyan-500 hover:bg-slate-900"
             >
               {r.label}
             </button>
@@ -468,7 +468,7 @@ export default function CaroRoomPage() {
                     key={s}
                     type="button"
                     onClick={() => setRematchSize(s)}
-                    className={`rounded-xl px-3 py-1.5 text-sm font-semibold border ${
+                    className={`btn-fx rounded-xl px-3 py-1.5 text-sm font-semibold border ${
                       rematchSize === s
                         ? "border-cyan-400 bg-cyan-500 text-slate-950"
                         : "border-slate-700 text-slate-300"
@@ -488,7 +488,7 @@ export default function CaroRoomPage() {
           <button
             type="button"
             onClick={rematch}
-            className="rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
+            className="btn-fx rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400"
           >
             Chơi lại {seat === "host" ? `${rematchSize}×${rematchSize}` : ""}
           </button>

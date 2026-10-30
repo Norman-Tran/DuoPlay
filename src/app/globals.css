@@ -9,3 +9,73 @@
 body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
+/* ---------- Shared interactive effects ---------- */
+@layer components {
+  .btn-fx {
+    @apply transition-[transform,box-shadow,background-color,border-color] duration-200 ease-out will-change-transform
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
+  }
+  .btn-fx:not(:disabled):hover,
+  .btn-fx:not(:disabled):focus-visible {
+    transform: scale(1.03);
+    box-shadow: 0 8px 20px -6px rgb(0 0 0 / 0.6), 0 0 18px -2px var(--glow, rgb(34 211 238 / 0.45));
+  }
+  .btn-fx:not(:disabled):active {
+    transform: scale(0.97);
+  }
+  .card-fx {
+    @apply block rounded-2xl transition-[transform,box-shadow] duration-200 ease-out will-change-transform
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
+  }
+  .card-fx:hover,
+  .card-fx:focus-visible {
+    transform: scale(1.05);
+    box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.7), 0 0 32px -4px var(--glow, rgb(34 211 238 / 0.5));
+  }
+  .card-fx:active {
+    transform: scale(0.97);
+  }
+  .card-enter {
+    animation: card-in 0.5s ease-out both;
+  }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Game icon animations (only while card hovered/focused) ---------- */
+.gi * { transform-box: fill-box; transform-origin: center; }
+@keyframes gi-draw { 0% { stroke-dashoffset: 40; } 45%, 100% { stroke-dashoffset: 0; } }
+@keyframes gi-sweep { 0%, 40% { stroke-dashoffset: 60; } 80%, 100% { stroke-dashoffset: 0; } }
+@keyframes gi-knight {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(0, -6px) rotate(-8deg); }
+  50% { transform: translate(0, -10px); }
+  75% { transform: translate(5px, -4px) rotate(6deg); }
+}
+@keyframes gi-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes gi-wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+@keyframes gi-spark { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.6); } }
+@keyframes gi-roll { 0% { transform: translateX(0) rotate(0); } 70%, 100% { transform: translateX(12px) rotate(360deg); } }
+@keyframes gi-cue { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 35% { transform: translateX(3px); } }
+
+.group:hover .gi-x, .group:focus-visible .gi-x { animation: gi-draw 1.6s ease-out infinite; }
+.group:hover .gi-o, .group:focus-visible .gi-o { animation: gi-draw 1.6s ease-out 0.3s infinite; }
+.group:hover .gi-line, .group:focus-visible .gi-line { animation: gi-sweep 1.6s ease-out infinite; }
+.group:hover .gi-knight, .group:focus-visible .gi-knight { animation: gi-knight 1.2s ease-in-out infinite; }
+.group:hover .gi-mine, .group:focus-visible .gi-mine { animation: gi-pulse 0.9s ease-in-out infinite; }
+.group:hover .gi-flag, .group:focus-visible .gi-flag { transform-origin: left bottom; animation: gi-wiggle 0.7s ease-in-out infinite; }
+.group:hover .gi-spark, .group:focus-visible .gi-spark { animation: gi-spark 0.35s linear infinite; }
+.group:hover .gi-ball, .group:focus-visible .gi-ball { animation: gi-roll 1.4s ease-out infinite; }
+.group:hover .gi-cue, .group:focus-visible .gi-cue { animation: gi-cue 1.4s ease-out infinite; }
+.group:hover .gi-bubble, .group:focus-visible .gi-bubble { animation: gi-pulse 1.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-fx, .card-fx { transition: box-shadow 0.2s ease-out; }
+  .btn-fx:not(:disabled):hover, .btn-fx:not(:disabled):focus-visible, .btn-fx:not(:disabled):active,
+  .card-fx:hover, .card-fx:focus-visible, .card-fx:active { transform: none; }
+  .card-enter { animation: none; }
+  .gi * { animation: none !important; }
+}
