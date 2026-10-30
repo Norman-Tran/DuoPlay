@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
@@ -277,11 +277,9 @@ export default function CaroRoomPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/game/caro" className="text-sm text-cyan-400 hover:underline">
-            ← Lobby Caro
-          </Link>
+          <BackLink href="/game/caro">Lobby Caro</BackLink>
           <h1 className="text-xl font-bold">
-            Phòng <span className="font-mono tracking-widest text-cyan-300">{code}</span>
+            Phòng <span className="select-text font-mono tracking-widest text-cyan-300">{code}</span>
             <span className="ml-2 text-sm font-normal text-slate-400">
               {size}×{size}
             </span>

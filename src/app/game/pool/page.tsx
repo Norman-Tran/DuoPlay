@@ -1,8 +1,8 @@
 "use client";
 
+import BackLink from "@/components/BackLink";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { getSocket } from "@/lib/socket";
 
 type RoomPayload = {
@@ -64,9 +64,7 @@ export default function PoolLobbyPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <Link href="/" className="text-sm text-cyan-400 hover:underline">
-          ← Về trang chủ
-        </Link>
+        <BackLink href="/">Về trang chủ</BackLink>
         <h1 className="mt-2 text-2xl font-bold">Bida lỗ — 8-ball 2 người</h1>
         <p className="mt-1 text-sm text-slate-400">
           Lượt chơi, 60 giây mỗi cú bắn. Kéo chuột chỉnh góc, thanh lực mạnh/nhẹ.

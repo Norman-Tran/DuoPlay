@@ -79,3 +79,52 @@ body {
   .card-enter { animation: none; }
   .gi * { animation: none !important; }
 }
+
+/* ---------- Per-game page background (subtle) ---------- */
+.game-bg {
+  position: fixed; inset: 0; z-index: -10; overflow: hidden; pointer-events: none;
+  background: linear-gradient(160deg, var(--bg-a) 0%, #020617 55%, var(--bg-b) 100%);
+  --bg-a: #0f172a; --bg-b: #1e1b2e; --blob-a: rgb(34 211 238 / 0.06); --blob-b: rgb(217 70 239 / 0.05);
+  transition: background 0.6s ease;
+}
+.game-bg-caro   { --bg-a: #1f0f1c; --bg-b: #0b1b26; --blob-a: rgb(244 114 182 / 0.07); --blob-b: rgb(34 211 238 / 0.06); }
+.game-bg-chess  { --bg-a: #1f1a0e; --bg-b: #17120b; --blob-a: rgb(250 204 21 / 0.06);  --blob-b: rgb(181 136 99 / 0.07); }
+.game-bg-mines  { --bg-a: #1f0e0e; --bg-b: #111827; --blob-a: rgb(248 113 113 / 0.06); --blob-b: rgb(148 163 184 / 0.05); }
+.game-bg-pool   { --bg-a: #062018; --bg-b: #0a1712; --blob-a: rgb(52 211 153 / 0.07);  --blob-b: rgb(16 185 129 / 0.05); }
+.game-bg-wordle { --bg-a: #0f1f12; --bg-b: #1f1c0c; --blob-a: rgb(106 170 100 / 0.07); --blob-b: rgb(201 180 88 / 0.06); }
+.game-bg-domino { --bg-a: #1c140c; --bg-b: #0e1420; --blob-a: rgb(245 238 220 / 0.05); --blob-b: rgb(251 146 60 / 0.05); }
+
+.game-bg-pattern { position: absolute; inset: 0; opacity: 0.5; }
+.game-bg-caro .game-bg-pattern, .game-bg-mines .game-bg-pattern {
+  background-image: linear-gradient(rgb(148 163 184 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.game-bg-chess .game-bg-pattern {
+  background-image: conic-gradient(rgb(240 217 181 / 0.035) 25%, transparent 0 50%, rgb(240 217 181 / 0.035) 0 75%, transparent 0);
+  background-size: 80px 80px;
+}
+.game-bg-pool .game-bg-pattern {
+  background-image: repeating-radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.012) 0 1px, transparent 1px 3px);
+}
+.game-bg-domino .game-bg-pattern {
+  background-image: radial-gradient(rgb(245 238 220 / 0.05) 1.5px, transparent 2px);
+  background-size: 28px 28px;
+}
+.game-bg-blob { position: absolute; width: 55vmax; height: 55vmax; border-radius: 9999px; filter: blur(60px); }
+.game-bg-blob-a { top: -20vmax; left: -15vmax; background: radial-gradient(circle, var(--blob-a), transparent 70%); animation: bg-drift 38s ease-in-out infinite alternate; }
+.game-bg-blob-b { bottom: -25vmax; right: -15vmax; background: radial-gradient(circle, var(--blob-b), transparent 70%); animation: bg-drift 46s ease-in-out infinite alternate-reverse; }
+@keyframes bg-drift { from { transform: translate(0, 0); } to { transform: translate(8vmax, 6vmax); } }
+@media (prefers-reduced-motion: reduce) { .game-bg-blob { animation: none; } }
+
+/* ---------- No text selection (deterrent; inputs & room codes stay selectable) ---------- */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input, textarea, [contenteditable], [contenteditable] *, .select-text {
+  user-select: text;
+  -webkit-user-select: text;
+}

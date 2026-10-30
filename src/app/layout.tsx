@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import GameBackground from "@/components/GameBackground";
+import GuardShell from "@/components/GuardShell";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -15,6 +17,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="vi">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-slate-950 text-slate-100`}>
+        <GameBackground />
+        <GuardShell />
         <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
           <header className="mb-8 flex items-center justify-between">
             <Link href="/" className="text-xl font-bold tracking-tight text-cyan-300">

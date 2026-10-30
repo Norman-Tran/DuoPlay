@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -1102,11 +1102,9 @@ export default function PoolRoomPage() {
     <div className="mx-auto w-full max-w-[1800px] space-y-3 px-1">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/game/pool" className="text-sm text-cyan-400 hover:underline">
-            ← Lobby bida
-          </Link>
+          <BackLink href="/game/pool">Lobby bida</BackLink>
           <h1 className="mt-1 text-xl font-bold">
-            Phòng <span className="font-mono tracking-widest text-cyan-300">{code}</span>
+            Phòng <span className="select-text font-mono tracking-widest text-cyan-300">{code}</span>
           </h1>
           <p className="text-sm text-slate-400">
             Bạn: {seat === "host" ? "Host (A)" : seat === "guest" ? "Guest (B)" : "…"}

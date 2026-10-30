@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
@@ -446,11 +446,9 @@ export default function ChessRoomPage() {
     <div className="relative space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/game/chess" className="text-sm text-cyan-400 hover:underline">
-            ← Lobby Cờ vua
-          </Link>
+          <BackLink href="/game/chess">Lobby Cờ vua</BackLink>
           <h1 className="text-xl font-bold">
-            Phòng <span className="font-mono tracking-widest text-cyan-300">{code}</span>
+            Phòng <span className="select-text font-mono tracking-widest text-cyan-300">{code}</span>
           </h1>
           <p className="text-sm text-slate-400">
             Bạn là {seat === "host" ? "Host (Trắng)" : seat === "guest" ? "Guest (Đen)" : "…"} · {statusText}

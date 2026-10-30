@@ -1,8 +1,8 @@
 "use client";
 
+import BackLink from "@/components/BackLink";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { getSocket } from "@/lib/socket";
 
 const DIFFS = [
@@ -71,9 +71,7 @@ export default function MinesLobbyPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <Link href="/" className="text-sm text-cyan-400 hover:underline">
-          ← Về trang chủ
-        </Link>
+        <BackLink href="/">Về trang chủ</BackLink>
         <h1 className="mt-2 text-2xl font-bold">Dò mìn — đua tốc độ 2 người</h1>
         <p className="mt-1 text-sm text-slate-400">
           Cùng một bản đồ mìn. Ai mở hết ô an toàn trước thì thắng. Dính bom = thua ngay.

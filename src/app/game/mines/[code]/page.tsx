@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import BackLink from "@/components/BackLink";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { getSocket } from "@/lib/socket";
@@ -285,16 +285,14 @@ export default function MinesRoomPage() {
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/game/mines" className="text-sm text-cyan-400 hover:underline">
-            ← Lobby Dò mìn
-          </Link>
+          <BackLink href="/game/mines">Lobby Dò mìn</BackLink>
           <h1 className="mt-1 text-xl font-bold sm:text-2xl">Dò mìn đua tốc độ</h1>
           <p className="mt-1 text-sm text-slate-400">
             Mã phòng{" "}
             <button
               type="button"
               onClick={copyCode}
-              className="font-mono font-bold tracking-widest text-cyan-300 hover:underline"
+              className="select-text font-mono font-bold tracking-widest text-cyan-300 hover:underline"
             >
               {code}
             </button>
