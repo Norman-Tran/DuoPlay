@@ -16,6 +16,7 @@ export default function ChessLobbyPage() {
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tc, setTc] = useState("10+0");
 
   function createRoom() {
     setError(null);
@@ -26,7 +27,7 @@ export default function ChessLobbyPage() {
       setError("Không kết nối được socket.");
       return;
     }
-    socket.emit("chess:create", (res: RoomPayload) => {
+    socket.emit("chess:create", { timeControl: tc }, (res: RoomPayload) => {
       setBusy(false);
       if (!res?.ok || !res.room) {
         setError(res?.error || "Tạo phòng thất bại.");
@@ -69,9 +70,36 @@ export default function ChessLobbyPage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold">Cờ vua — phòng 2 người</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Host cầm trắng, người vào sau cầm đen. Cả hai bấm Ready mới bắt đầu. Mỗi lượt 60s — hết giờ server đi ngẫu nhiên một nước hợp lệ.
-          Chiếu hết / hết nước / hoà theo luật chuẩn.
+          Host cầm trắng, người vào sau cầm đen. Cả hai bấm Ready mới bắt đầu. Đồng hồ theo luật FIDE: mỗi bên có tổng thời gian + giây cộng thêm sau mỗi nước.
+          Hết giờ là thua, trừ khi đối thủ không còn đủ quân để chiếu hết thì hòa.
         </p>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-slate-300">Thời gian (phút + giây cộng mỗi nước)</p>
+        {[
+          ["Bullet", ["1+0", "2+1"]],
+          ["Blitz", ["3+0", "3+2", "5+0", "5+3"]],
+          ["Rapid", ["10+0", "10+5", "15+10"]],
+          ["Classical", ["30+0"]],
+          ["Khác", ["unlimited"]],
+        ].map(([group, keys]) => (
+          <div key={group as string} className="flex flex-wrap items-center gap-2">
+            <span className="w-20 text-xs text-slate-500">{group as string}</span>
+            {(keys as string[]).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setTc(k)}
+                className={`rounded-lg border px-3 py-1.5 font-mono text-sm ${
+                  tc === k ? "border-cyan-400 bg-cyan-500 text-slate-950" : "border-slate-700 bg-slate-900 text-slate-300 hover:border-cyan-500"
+                }`}
+              >
+                {k === "unlimited" ? "Không giới hạn" : k}
+              </button>
+            ))}
+          </div>
+        ))}
       </div>
 
       <button

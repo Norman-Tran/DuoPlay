@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import ChessPiece from "@/components/ChessPiece";
 
 type Piece = { color: "w" | "b"; type: string } | null;
 type EndReason =
@@ -14,7 +15,13 @@ type EndReason =
   | "fifty"
   | "insufficient"
   | "agreement"
+  | "timeout"
+  | "timeout-draw"
   | null;
+type HistMove = {
+  san: string; from: string; to: string; color: "w" | "b"; piece: string;
+  captured: string | null; promotion: string | null;
+};
 type RoomState = {
   code: string;
   hostSeated: boolean;
@@ -31,8 +38,9 @@ type RoomState = {
   isCheckmate: boolean;
   isStalemate: boolean;
   isDraw: boolean;
-  turnDeadline: number | null;
-  turnLimitSec: number;
+  timeControl: { key: string; baseMs: number; incMs: number; label: string };
+  clock: { white: number; black: number; running: "white" | "black" | null; elapsedMs: number };
+  history: HistMove[];
   lastMove: { from: string; to: string; san: string } | null;
   lastMoveAuto: boolean;
   score: { white: number; black: number };
@@ -51,10 +59,38 @@ const REACTIONS = [
   { id: "heart", label: "❤️" },
 ];
 
-const PIECE_GLYPH: Record<string, string> = {
-  wk: "♔", wq: "♕", wr: "♖", wb: "♗", wn: "♘", wp: "♙",
-  bk: "♚", bq: "♛", br: "♜", bb: "♝", bn: "♞", bp: "♟",
-};
+const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+const START_COUNT: Record<string, number> = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+
+function formatClock(ms: number) {
+  const t = Math.max(0, ms);
+  if (t < 10_000) return `0:0${(Math.floor(t / 100) / 10).toFixed(1)}`;
+  const total = Math.ceil(t / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = String(total % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
+/** Pieces captured BY each side, derived from the current board (handles promotion). */
+function capturedFromBoard(board: Piece[][]) {
+  const left: Record<string, Record<string, number>> = { w: {}, b: {} };
+  for (const rank of board) for (const sq of rank) if (sq) left[sq.color][sq.type] = (left[sq.color][sq.type] || 0) + 1;
+  const lost = (c: "w" | "b") => {
+    const out: string[] = [];
+    let promoted = 0;
+    for (const t of ["q", "r", "b", "n"]) promoted += Math.max(0, (left[c][t] || 0) - START_COUNT[t]);
+    for (const t of ["q", "r", "b", "n", "p"]) {
+      let n = START_COUNT[t] - (left[c][t] || 0);
+      if (t === "p") n -= promoted;
+      for (let i = 0; i < n; i++) out.push(t);
+    }
+    return out;
+  };
+  const material = (c: "w" | "b") =>
+    Object.entries(left[c]).reduce((a, [t, n]) => a + PIECE_VALUE[t] * n, 0);
+  return { byWhite: lost("b"), byBlack: lost("w"), diff: material("w") - material("b") };
+}
 
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
@@ -73,17 +109,21 @@ function endReasonLabel(
 ): string {
   const reason = room.endReason;
   if (room.winner === "draw") {
-    if (reason === "stalemate" || room.isStalemate) return "Hòa — hết nước";
+    if (reason === "stalemate" || room.isStalemate) return "Hòa pat";
     if (reason === "threefold") return "Hòa — lặp thế 3 lần";
     if (reason === "fifty") return "Hòa — 50 nước";
-    if (reason === "insufficient") return "Hòa — thiếu quân";
-    if (reason === "agreement") return "Hòa — đồng ý";
+    if (reason === "insufficient") return "Hòa — không đủ quân chiếu hết";
+    if (reason === "agreement") return "Hòa — thỏa thuận";
+    if (reason === "timeout-draw") return "Hòa — hết giờ nhưng đối thủ không đủ quân chiếu hết";
     return "Hòa";
   }
   if (room.winner) {
     const iWon = room.winner === color;
     if (reason === "resign") {
-      return iWon ? "Thắng — đối thủ đầu hàng" : "Thua — bạn đã đầu hàng";
+      return iWon ? "Thắng — đối thủ xin thua" : "Thua — bạn đã xin thua";
+    }
+    if (reason === "timeout") {
+      return iWon ? "Thắng — đối thủ hết giờ" : "Thua — bạn hết giờ";
     }
     if (reason === "checkmate" || room.isCheckmate) {
       return iWon ? "Thắng — chiếu hết" : "Thua — bị chiếu hết";
@@ -174,16 +214,39 @@ export default function ChessRoomPage() {
 
   useEffect(() => applyJoinOrSync(), [applyJoinOrSync]);
 
+  // Local receive time of the latest room snapshot, used to interpolate the running clock.
+  const recvAt = useRef(Date.now());
   useEffect(() => {
-    if (!room?.turnDeadline || room.winner) return;
-    const id = window.setInterval(() => setNow(Date.now()), 200);
+    recvAt.current = Date.now();
+  }, [room]);
+  useEffect(() => {
+    if (!room?.clock?.running || room.winner) return;
+    const id = window.setInterval(() => setNow(Date.now()), 100);
     return () => window.clearInterval(id);
-  }, [room?.turnDeadline, room?.winner, room?.turn]);
+  }, [room?.clock?.running, room?.winner, room]);
 
-  const secondsLeft = useMemo(() => {
-    if (!room?.turnDeadline || room.winner) return null;
-    return Math.max(0, Math.ceil((room.turnDeadline - now) / 1000));
-  }, [room, now]);
+  function clockMs(side: "white" | "black") {
+    if (!room?.clock) return 0;
+    const base = room.clock[side];
+    if (room.clock.running !== side || room.winner) return base;
+    return base - room.clock.elapsedMs - Math.max(0, now - recvAt.current);
+  }
+  const unlimited = room?.timeControl?.key === "unlimited";
+  const logRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [room?.history?.length]);
+  const captured = useMemo(() => (room?.board ? capturedFromBoard(room.board) : null), [room?.board]);
+  const checkedKing = useMemo(() => {
+    if (!room?.inCheck) return null;
+    const c = room.turn === "white" ? "w" : "b";
+    for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) {
+      const p = room.board[r][f];
+      if (p && p.type === "k" && p.color === c) return sqName(r, f);
+    }
+    return null;
+  }, [room?.inCheck, room?.board, room?.turn]);
 
   const bothReady = !!(room?.hostReady && room?.guestReady);
   const bothSeated = !!(room?.hostSeated && room?.guestSeated);
@@ -343,12 +406,41 @@ export default function ChessRoomPage() {
     }
   }
 
-  const limit = room?.turnLimitSec ?? 60;
-  const urgent = secondsLeft !== null && secondsLeft <= 10;
-  const pct =
-    secondsLeft === null || !room?.turnDeadline
-      ? 0
-      : Math.max(0, Math.min(100, ((room.turnDeadline - now) / (limit * 1000)) * 100));
+  function ClockBox({ side }: { side: "white" | "black" }) {
+    const ms = clockMs(side);
+    const running = room?.clock?.running === side && !room?.winner;
+    const low = !unlimited && ms < 10_000;
+    const mine = side === color;
+    const caps = side === "white" ? captured?.byWhite : captured?.byBlack;
+    const adv = captured ? (side === "white" ? captured.diff : -captured.diff) : 0;
+    return (
+      <div className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 ${running ? "border-cyan-400 bg-slate-800" : "border-slate-700 bg-slate-900/70"}`}>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-200">
+            {side === "white" ? "Trắng" : "Đen"} {mine ? "(Bạn)" : "(Đối thủ)"}
+          </p>
+          <div className="flex h-5 flex-wrap items-center">
+            {caps?.map((t, i) => (
+              <ChessPiece key={i} color={side === "white" ? "b" : "w"} type={t} className="-mr-1.5 h-5 w-5" />
+            ))}
+            {adv > 0 && <span className="ml-2 text-xs font-semibold text-slate-400">+{adv}</span>}
+          </div>
+        </div>
+        <div
+          className={`rounded-lg px-3 py-1 font-mono text-2xl font-bold tabular-nums ${
+            low ? "animate-pulse bg-rose-600 text-white" : running ? "bg-slate-100 text-slate-900" : "bg-slate-950 text-slate-400"
+          }`}
+        >
+          {unlimited ? "∞" : formatClock(ms)}
+        </div>
+      </div>
+    );
+  }
+  const topSide: "white" | "black" = color === "black" ? "white" : "black";
+  const bottomSide: "white" | "black" = topSide === "white" ? "black" : "white";
+  const hist = room?.history ?? [];
+  const pairs: { n: number; w?: HistMove; b?: HistMove; wi: number; bi: number }[] = [];
+  for (let i = 0; i < hist.length; i += 2) pairs.push({ n: i / 2 + 1, w: hist[i], b: hist[i + 1], wi: i, bi: i + 1 });
 
   return (
     <div className="relative space-y-4">
@@ -395,7 +487,7 @@ export default function ChessRoomPage() {
         <div className="rounded-2xl border-2 border-amber-400/70 bg-amber-950/50 px-4 py-3">
           <p className="text-base font-semibold text-amber-100">Đối thủ đã rời phòng / mất kết nối</p>
           <p className="mt-1 text-sm text-amber-200/90">
-            Timer tạm dừng, điểm phiên đã reset. Chờ họ vào lại bằng mã{" "}
+            Đồng hồ tạm dừng, điểm phiên đã reset. Chờ họ vào lại bằng mã{" "}
             <span className="font-mono font-bold">{code}</span>.
           </p>
         </div>
@@ -428,7 +520,7 @@ export default function ChessRoomPage() {
             onClick={resign}
             className="rounded-xl border border-rose-500/60 bg-rose-950/50 px-4 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-900/60 disabled:opacity-50"
           >
-            Đầu hàng
+            Xin thua
           </button>
           {!opponentOfferedDraw && (
             <button
@@ -468,45 +560,15 @@ export default function ChessRoomPage() {
         </div>
       )}
 
-      {room && !room.winner && bothReady && secondsLeft !== null && (
-        <div
-          className={`rounded-2xl border px-4 py-3 ${
-            urgent ? "border-rose-500/60 bg-rose-950/40" : "border-slate-700 bg-slate-900/70"
-          }`}
-        >
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-300">
-              Lượt <strong>{room.turn === "white" ? "Trắng" : "Đen"}</strong>
-              {room.turn === color ? " (bạn)" : " (đối thủ)"} · mỗi lượt {limit}s
-            </span>
-            <span className={`font-mono text-2xl font-bold tabular-nums ${urgent ? "text-rose-300" : "text-cyan-300"}`}>
-              {secondsLeft}s
-            </span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
-            <div
-              className={`h-full transition-[width] duration-200 ease-linear ${urgent ? "bg-rose-400" : "bg-cyan-400"}`}
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
-      )}
-
-      {room?.lastMoveAuto && !room.winner && (
-        <p className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-3 py-2 text-sm text-amber-100">
-          Nước vừa rồi là <strong>tự động</strong> (hết {limit}s): {room.lastMove?.san}
-        </p>
-      )}
-
-      {room?.lastMove && !room.lastMoveAuto && (
-        <p className="text-xs text-slate-500">Nước gần nhất: {room.lastMove.san}</p>
-      )}
 
       {error && (
         <p className="rounded-xl border border-rose-500/40 bg-rose-950/40 px-3 py-2 text-sm text-rose-200">{error}</p>
       )}
 
-      <div className="relative mx-auto w-max rounded-2xl border border-slate-800 bg-slate-900/60 p-2 sm:p-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <div className="mx-auto w-max space-y-2">
+      {room && <ClockBox side={topSide} />}
+      <div className="relative w-max rounded-2xl border border-slate-800 bg-slate-900/60 p-2 sm:p-3">
         <div className="grid grid-cols-8 gap-0 overflow-hidden rounded-lg shadow-lg">
           {displayBoard.map((rank, dr) =>
             rank.map((piece, dc) => {
@@ -516,26 +578,45 @@ export default function ChessRoomPage() {
               const isSel = selected === name;
               const isTgt = targets.includes(name);
               const isLast =
-                room?.lastMove && (room.lastMove.from === name || room.lastMove.to === name);
-              const glyph = piece ? PIECE_GLYPH[`${piece.color}${piece.type}`] : "";
+                !!room?.lastMove && (room.lastMove.from === name || room.lastMove.to === name);
+              const isCheck = checkedKing === name;
+              const coordColor = light ? "#b58863" : "#f0d9b5";
               return (
                 <button
                   key={name}
                   type="button"
                   disabled={!bothReady || !!room?.winner || !myTurn}
                   onClick={() => pickSquare(dr, dc)}
-                  className={`relative flex h-10 w-10 items-center justify-center text-2xl sm:h-12 sm:w-12 sm:text-3xl ${
-                    light ? "bg-amber-100 text-slate-900" : "bg-amber-800 text-slate-50"
-                  } ${isSel ? "ring-2 ring-inset ring-cyan-400" : ""} ${
-                    isLast ? "outline outline-2 outline-yellow-300/80 -outline-offset-2" : ""
-                  }`}
+                  className="relative flex h-10 w-10 items-center justify-center sm:h-14 sm:w-14 disabled:cursor-default"
+                  style={{ backgroundColor: light ? "#f0d9b5" : "#b58863" }}
                 >
-                  {glyph}
+                  {isLast && <span className="absolute inset-0" style={{ backgroundColor: "rgba(255,213,0,0.55)" }} />}
+                  {isSel && <span className="absolute inset-0" style={{ backgroundColor: "rgba(20,120,255,0.45)" }} />}
+                  {isCheck && (
+                    <span
+                      className="absolute inset-0"
+                      style={{ background: "radial-gradient(circle, rgba(255,0,0,0.95) 0%, rgba(230,0,0,0.6) 40%, rgba(160,0,0,0) 75%)" }}
+                    />
+                  )}
+                  {dc === 0 && (
+                    <span className="absolute left-0.5 top-0 text-[10px] font-bold sm:text-xs" style={{ color: coordColor }}>
+                      {8 - row}
+                    </span>
+                  )}
+                  {dr === 7 && (
+                    <span className="absolute bottom-0 right-0.5 text-[10px] font-bold sm:text-xs" style={{ color: coordColor }}>
+                      {FILES[col]}
+                    </span>
+                  )}
+                  {piece && <ChessPiece color={piece.color} type={piece.type} className="relative h-[90%] w-[90%]" />}
                   {isTgt && (
                     <span
-                      className={`absolute rounded-full ${
-                        piece ? "inset-1 border-2 border-emerald-400/80" : "h-3 w-3 bg-emerald-500/70"
-                      }`}
+                      className="pointer-events-none absolute rounded-full"
+                      style={
+                        piece
+                          ? { inset: 2, border: "4px solid rgba(20,85,30,0.75)" }
+                          : { width: "30%", height: "30%", backgroundColor: "rgba(20,85,30,0.6)" }
+                      }
                     />
                   )}
                 </button>
@@ -555,6 +636,43 @@ export default function ChessRoomPage() {
             </div>
           ))}
         </div>
+      </div>
+      {room && <ClockBox side={bottomSide} />}
+      {room && (
+        <p className="text-center text-xs text-slate-500">
+          {room.timeControl.label}
+          {!unlimited && " · đồng hồ chạy sau nước đầu tiên của mỗi bên"}
+        </p>
+      )}
+      </div>
+
+      <div className="w-full rounded-2xl border border-slate-800 bg-slate-900/60 p-3 lg:w-64">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">Biên bản nước đi</p>
+        <div ref={logRef} className="max-h-72 overflow-y-auto font-mono text-sm lg:max-h-[30rem]">
+          {pairs.length === 0 && <p className="text-xs text-slate-500">Chưa có nước nào.</p>}
+          {pairs.map((p) => (
+            <div key={p.n} className="grid grid-cols-[2.2rem_1fr_1fr] items-start gap-1 py-0.5">
+              <span className="text-slate-500">{p.n}.</span>
+              {[{ m: p.w, i: p.wi }, { m: p.b, i: p.bi }].map(({ m, i }) =>
+                m ? (
+                  <span
+                    key={i}
+                    title={`${m.from}→${m.to}`}
+                    className={`rounded px-1 ${i === hist.length - 1 ? "bg-amber-400 font-bold text-slate-950" : "text-slate-200"}`}
+                  >
+                    {m.san}
+                    <span className={`block text-[10px] ${i === hist.length - 1 ? "text-slate-800" : "text-slate-500"}`}>
+                      {m.from}→{m.to}
+                    </span>
+                  </span>
+                ) : (
+                  <span key={i} />
+                ),
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
       </div>
 
       {promo && (

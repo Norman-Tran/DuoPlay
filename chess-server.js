@@ -1,6 +1,29 @@
 const { Chess } = require("chess.js");
 
-const TURN_MS = 60_000;
+/**
+ * Time controls (FIDE Laws of Chess, Article 6 + Fischer increment).
+ * Convention (lichess): each side's clock only starts after that side's first
+ * move — i.e. no clock runs until White has moved, and White's clock starts
+ * after Black's first move. From then on the side to move consumes its own
+ * remaining time; after completing a move, the increment is added (FIDE 6.x,
+ * "increment" mode). Flag fall (FIDE 6.9): the player whose time runs out
+ * loses, unless the opponent cannot checkmate by any series of legal moves,
+ * in which case the game is drawn.
+ */
+const TIME_CONTROLS = {
+  "1+0": { baseMs: 60_000, incMs: 0, label: "Bullet 1+0" },
+  "2+1": { baseMs: 120_000, incMs: 1000, label: "Bullet 2+1" },
+  "3+0": { baseMs: 180_000, incMs: 0, label: "Blitz 3+0" },
+  "3+2": { baseMs: 180_000, incMs: 2000, label: "Blitz 3+2" },
+  "5+0": { baseMs: 300_000, incMs: 0, label: "Blitz 5+0" },
+  "5+3": { baseMs: 300_000, incMs: 3000, label: "Blitz 5+3" },
+  "10+0": { baseMs: 600_000, incMs: 0, label: "Rapid 10+0" },
+  "10+5": { baseMs: 600_000, incMs: 5000, label: "Rapid 10+5" },
+  "15+10": { baseMs: 900_000, incMs: 10_000, label: "Rapid 15+10" },
+  "30+0": { baseMs: 1_800_000, incMs: 0, label: "Classical 30+0" },
+  unlimited: { baseMs: 0, incMs: 0, label: "Không giới hạn" },
+};
+const DEFAULT_TC = "10+0";
 /** @type {Map<string, any>} */
 const chessRooms = new Map();
 
@@ -17,7 +40,68 @@ function clearTurnTimer(room) {
     clearTimeout(room.turnTimer);
     room.turnTimer = null;
   }
-  room.turnDeadline = null;
+}
+
+function isUnlimited(room) {
+  return room.tcKey === "unlimited";
+}
+
+function resetClock(room) {
+  const tc = TIME_CONTROLS[room.tcKey];
+  room.clock = { white: tc.baseMs, black: tc.baseMs };
+  room.turnStart = null;
+}
+
+/** Clock runs only once both sides have made their first move (lichess convention). */
+function clockShouldRun(room) {
+  return !isUnlimited(room) && gameActive(room) && room.game.history().length >= 2;
+}
+
+/** Deduct elapsed time for the side to move and stop its running segment. */
+function settleClock(room, now = Date.now()) {
+  if (room.turnStart == null) return;
+  const side = currentMark(room);
+  room.clock[side] = Math.max(0, room.clock[side] - (now - room.turnStart));
+  room.turnStart = null;
+}
+
+/** Hand-written FIDE 6.9 helper: can `color` checkmate by any series of legal moves? */
+function hasMatingMaterial(game, color) {
+  const c = color === "white" ? "w" : "b";
+  let minors = 0;
+  for (const rank of game.board()) {
+    for (const sq of rank) {
+      if (!sq || sq.color !== c) continue;
+      if (sq.type === "p" || sq.type === "r" || sq.type === "q") return true;
+      if (sq.type === "b" || sq.type === "n") minors += 1;
+    }
+  }
+  // Lone king, or K+B / K+N only: cannot mate.
+  return minors >= 2;
+}
+
+function onFlag(io, room, now = Date.now()) {
+  if (!gameActive(room) || isUnlimited(room)) return;
+  settleClock(room, now);
+  const loser = currentMark(room);
+  if (room.clock[loser] > 0) {
+    startTurnTimer(io, room, now);
+    return;
+  }
+  const opp = loser === "white" ? "black" : "white";
+  room.turnTimer && clearTimeout(room.turnTimer);
+  room.turnTimer = null;
+  room.drawOfferFrom = null;
+  if (hasMatingMaterial(room.game, opp)) {
+    room.winner = opp;
+    room.endReason = "timeout";
+    if (opp === "white") room.scoreWhite += 1;
+    else room.scoreBlack += 1;
+  } else {
+    room.winner = "draw";
+    room.endReason = "timeout-draw";
+  }
+  if (io) emitRoom(io, room);
 }
 
 function resetSessionScore(room) {
@@ -101,8 +185,23 @@ function publicRoom(room) {
     isCheckmate: game.isCheckmate(),
     isStalemate: game.isStalemate(),
     isDraw: game.isDraw() || winner === "draw",
-    turnDeadline: room.turnDeadline,
-    turnLimitSec: TURN_MS / 1000,
+    timeControl: { key: room.tcKey, ...TIME_CONTROLS[room.tcKey] },
+    clock: {
+      white: room.clock.white,
+      black: room.clock.black,
+      running: room.turnStart != null ? currentMark(room) : null,
+      // elapsed since turn start, so clients don't depend on clock sync
+      elapsedMs: room.turnStart != null ? Date.now() - room.turnStart : 0,
+    },
+    history: room.game.history({ verbose: true }).map((m) => ({
+      san: m.san,
+      from: m.from,
+      to: m.to,
+      color: m.color,
+      piece: m.piece,
+      captured: m.captured || null,
+      promotion: m.promotion || null,
+    })),
     lastMove: room.lastMove,
     lastMoveAuto: room.lastMoveAuto,
     score: { white: room.scoreWhite, black: room.scoreBlack },
@@ -117,20 +216,32 @@ function emitRoom(io, room) {
   io.to(room.code).emit("chess:update", publicRoom(room));
 }
 
-function startTurnTimer(io, room) {
+function startTurnTimer(io, room, now = Date.now()) {
   clearTurnTimer(room);
-  if (!gameActive(room)) return;
-  room.turnDeadline = Date.now() + TURN_MS;
+  room.turnStart = null;
+  if (!clockShouldRun(room)) return;
+  room.turnStart = now;
+  const side = currentMark(room);
   room.turnTimer = setTimeout(() => {
     room.turnTimer = null;
-    onTurnTimeout(io, room);
-  }, TURN_MS);
+    onFlag(io, room);
+  }, room.clock[side] + 20);
+  if (room.turnTimer.unref) room.turnTimer.unref();
 }
 
-function randomLegalMove(game) {
-  const moves = game.moves({ verbose: true });
-  if (!moves.length) return null;
-  return moves[Math.floor(Math.random() * moves.length)];
+/** Called after a legal move by `mover`: deduct time, add increment. Returns false on flag. */
+function chargeMove(room, mover, now = Date.now()) {
+  if (isUnlimited(room)) return true;
+  if (room.turnStart != null) {
+    const left = room.clock[mover] - (now - room.turnStart);
+    room.turnStart = null;
+    if (left <= 0) {
+      room.clock[mover] = 0;
+      return false;
+    }
+    room.clock[mover] = left + TIME_CONTROLS[room.tcKey].incMs;
+  }
+  return true;
 }
 
 function applyOutcome(room) {
@@ -141,11 +252,13 @@ function applyOutcome(room) {
   room.drawOfferFrom = null;
   if (outcome.winner === "white") room.scoreWhite += 1;
   else if (outcome.winner === "black") room.scoreBlack += 1;
+  room.turnStart = null;
   clearTurnTimer(room);
   return true;
 }
 
 function endByResign(room, resigningColor) {
+  settleClock(room);
   const winner = resigningColor === "white" ? "black" : "white";
   room.winner = winner;
   room.endReason = "resign";
@@ -156,32 +269,18 @@ function endByResign(room, resigningColor) {
 }
 
 function endByAgreement(room) {
+  settleClock(room);
   room.winner = "draw";
   room.endReason = "agreement";
   room.drawOfferFrom = null;
   clearTurnTimer(room);
 }
 
-function onTurnTimeout(io, room) {
-  if (!gameActive(room)) return;
-  room.drawOfferFrom = null;
-  const mv = randomLegalMove(room.game);
-  if (!mv) {
-    applyOutcome(room);
-    emitRoom(io, room);
-    return;
-  }
-  room.game.move(mv);
-  room.lastMove = { from: mv.from, to: mv.to, san: mv.san };
-  room.lastMoveAuto = true;
-  if (!applyOutcome(room)) {
-    startTurnTimer(io, room);
-  }
-  emitRoom(io, room);
-}
-
-function newRoom(hostId) {
-  return {
+function newRoom(hostId, tcKey = DEFAULT_TC) {
+  const room = {
+    tcKey: TIME_CONTROLS[tcKey] ? tcKey : DEFAULT_TC,
+    clock: null,
+    turnStart: null,
     code: makeCode(),
     hostId,
     guestId: null,
@@ -198,6 +297,31 @@ function newRoom(hostId) {
     scoreWhite: 0,
     scoreBlack: 0,
   };
+  resetClock(room);
+  return room;
+}
+
+/** Apply a move for the side to move (shared by socket handler and tests). */
+function applyMove(io, room, mv, now = Date.now()) {
+  const mover = currentMark(room);
+  // Flag check before the move is accepted (time already ran out).
+  if (!isUnlimited(room) && room.turnStart != null && room.clock[mover] - (now - room.turnStart) <= 0) {
+    onFlag(io, room, now);
+    return { ok: false, error: "Hết giờ." };
+  }
+  let moved;
+  try {
+    moved = room.game.move(mv);
+  } catch {
+    moved = null;
+  }
+  if (!moved) return { ok: false, error: "Nước đi không hợp lệ." };
+  chargeMove(room, mover, now);
+  room.lastMove = { from: moved.from, to: moved.to, san: moved.san };
+  room.lastMoveAuto = false;
+  room.drawOfferFrom = null;
+  if (!applyOutcome(room)) startTurnTimer(io, room, now);
+  return { ok: true };
 }
 
 /**
@@ -205,8 +329,12 @@ function newRoom(hostId) {
  */
 function registerChess(io) {
   io.on("connection", (socket) => {
-    socket.on("chess:create", (cb) => {
-      const room = newRoom(socket.id);
+    socket.on("chess:create", (opts, cb) => {
+      if (typeof opts === "function") {
+        cb = opts;
+        opts = {};
+      }
+      const room = newRoom(socket.id, opts && opts.timeControl);
       chessRooms.set(room.code, room);
       socket.join(room.code);
       socket.data.chessCode = room.code;
@@ -234,6 +362,7 @@ function registerChess(io) {
         socket.join(normalized);
         socket.data.chessCode = normalized;
         socket.data.chessSeat = "host";
+        settleClock(room);
         clearTurnTimer(room);
         cb?.({ ok: true, seat: "host", color: "white", room: publicRoom(room) });
         emitRoom(io, room);
@@ -252,6 +381,7 @@ function registerChess(io) {
       socket.join(normalized);
       socket.data.chessCode = normalized;
       socket.data.chessSeat = "guest";
+      settleClock(room);
       clearTurnTimer(room);
       cb?.({ ok: true, seat: "guest", color: "black", room: publicRoom(room) });
       emitRoom(io, room);
@@ -289,8 +419,9 @@ function registerChess(io) {
       else room.guestReady = Boolean(ready);
 
       if (bothReady(room)) {
-        if (!room.turnDeadline) startTurnTimer(io, room);
+        if (!room.turnTimer) startTurnTimer(io, room);
       } else {
+        settleClock(room);
         clearTurnTimer(room);
         room.drawOfferFrom = null;
       }
@@ -344,25 +475,10 @@ function registerChess(io) {
         return;
       }
       const { from, to, promotion } = payload || {};
-      let moved;
-      try {
-        moved = room.game.move({
-          from,
-          to,
-          promotion: promotion || "q",
-        });
-      } catch {
-        moved = null;
-      }
-      if (!moved) {
-        cb?.({ ok: false, error: "Nước đi không hợp lệ." });
+      const res = applyMove(io, room, { from, to, promotion: promotion || "q" });
+      if (!res.ok) {
+        cb?.({ ok: false, error: res.error });
         return;
-      }
-      room.lastMove = { from: moved.from, to: moved.to, san: moved.san };
-      room.lastMoveAuto = false;
-      room.drawOfferFrom = null;
-      if (!applyOutcome(room)) {
-        startTurnTimer(io, room);
       }
       emitRoom(io, room);
       cb?.({ ok: true, room: publicRoom(room) });
@@ -486,6 +602,7 @@ function registerChess(io) {
       room.drawOfferFrom = null;
       room.lastMove = null;
       room.lastMoveAuto = false;
+      resetClock(room);
       room.hostReady = false;
       room.guestReady = false;
       emitRoom(io, room);
@@ -529,6 +646,7 @@ function registerChess(io) {
       }
       room.drawOfferFrom = null;
       resetSessionScore(room);
+      settleClock(room);
       if (!room.hostId && !room.guestId) {
         clearTurnTimer(room);
         chessRooms.delete(code);
@@ -541,4 +659,8 @@ function registerChess(io) {
   });
 }
 
-module.exports = { registerChess };
+module.exports = {
+  registerChess,
+  TIME_CONTROLS,
+  _test: { newRoom, applyMove, onFlag, hasMatingMaterial, startTurnTimer, settleClock, clearTurnTimer, publicRoom },
+};
