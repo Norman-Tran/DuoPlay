@@ -5,6 +5,8 @@ const { Server } = require("socket.io");
 const { registerChess } = require("./chess-server");
 const { registerMines } = require("./mines-server");
 const { registerPool } = require("./pool-server");
+const { registerWordle } = require("./wordle-server");
+const { registerDomino } = require("./domino-server");
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -308,6 +310,8 @@ app.prepare().then(() => {
   registerChess(io);
   registerMines(io);
   registerPool(io);
+  registerWordle(io);
+  registerDomino(io);
 
   io.on("connection", (socket) => {
     socket.on("room:create", (payload, cb) => {

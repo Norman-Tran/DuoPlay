@@ -128,3 +128,54 @@ input, textarea, [contenteditable], [contenteditable] *, .select-text {
   user-select: text;
   -webkit-user-select: text;
 }
+
+/* ---------- Wordle ---------- */
+.wd-tile { transform-style: preserve-3d; }
+.wd-pop { animation: wd-pop 100ms ease-out; }
+@keyframes wd-pop { 0% { transform: scale(0.8); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.wd-flip { animation: wd-flip 300ms ease-in both; }
+@keyframes wd-flip {
+  0% { transform: rotateX(0); background-color: transparent; border-color: #565758; color: #fff; }
+  49.9% { transform: rotateX(-90deg); background-color: transparent; border-color: #565758; }
+  50% { transform: rotateX(-90deg); background-color: var(--wd-c); border-color: var(--wd-c); }
+  100% { transform: rotateX(0); background-color: var(--wd-c); border-color: var(--wd-c); }
+}
+.wd-shake { animation: wd-shake 500ms ease-in-out; }
+@keyframes wd-shake {
+  10%, 90% { transform: translateX(-2px); } 20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); } 40%, 60% { transform: translateX(6px); }
+}
+.wd-bounce { animation: wd-bounce 1000ms ease both; }
+@keyframes wd-bounce {
+  0%, 20% { transform: translateY(0); } 40% { transform: translateY(-30px); } 50% { transform: translateY(5px); }
+  60% { transform: translateY(-15px); } 80% { transform: translateY(2px); } 100% { transform: translateY(0); }
+}
+.wd-toast { animation: wd-toast 1.6s ease both; }
+@keyframes wd-toast { 0% { opacity: 0; transform: translateY(-6px); } 10%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+/* ---------- Domino ---------- */
+.dm-enter { transform-box: fill-box; transform-origin: center; animation: dm-enter 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes dm-enter {
+  from { transform: translate(var(--fx, 0px), var(--fy, 200px)) rotate(var(--fr, -90deg)) scale(1.15); opacity: 0.4; }
+  to { transform: none; opacity: 1; }
+}
+.dm-flip { animation: dm-flip 450ms ease-out both; }
+@keyframes dm-flip { 0% { transform: rotateY(90deg) translateY(-20px); } 100% { transform: none; } }
+.dm-marker { animation: dm-pulse 1.1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes dm-pulse { 0%, 100% { opacity: 0.55; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.05); } }
+.dm-pass { animation: dm-pass 1.8s ease both; }
+@keyframes dm-pass { 0% { opacity: 0; transform: scale(0.6); } 15% { opacity: 1; transform: scale(1.08); } 25%, 80% { transform: scale(1); opacity: 1; } 100% { opacity: 0; } }
+
+/* GameIcon: wordle + domino */
+@keyframes gi-wflip { 0%, 100% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } }
+.group:hover .gi-wt, .group:focus-visible .gi-wt { animation: gi-wflip 1.2s ease-in-out infinite; }
+.group:hover .gi-wt2, .group:focus-visible .gi-wt2 { animation: gi-wflip 1.2s ease-in-out 0.2s infinite; }
+.group:hover .gi-wt3, .group:focus-visible .gi-wt3 { animation: gi-wflip 1.2s ease-in-out 0.4s infinite; }
+@keyframes gi-dtip { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-24deg); } }
+.group:hover .gi-d1, .group:focus-visible .gi-d1 { transform-origin: left bottom; animation: gi-dtip 1.4s ease-in infinite alternate; }
+.group:hover .gi-d2, .group:focus-visible .gi-d2 { transform-origin: left bottom; animation: gi-dtip 1.4s ease-in 0.25s infinite alternate; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-pop, .wd-shake, .wd-bounce, .dm-enter, .dm-flip, .dm-marker { animation: none !important; }
+  .wd-flip { animation-duration: 1ms !important; }
+}

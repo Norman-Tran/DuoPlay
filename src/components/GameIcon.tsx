@@ -49,6 +49,38 @@ export default function GameIcon({ id }: { id: string }) {
           </g>
         </svg>
       );
+    case "wordle":
+      return (
+        <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
+          {[
+            ["gi-wt", "#6aaa64", "W"],
+            ["gi-wt2", "#c9b458", "O"],
+            ["gi-wt3", "#787c7e", "R"],
+          ].map(([c, fill, ch], i) => (
+            <g key={i} className={c}>
+              <rect x={2 + i * 15.5} y={14} width={13} height={13} rx={1.5} fill={fill} />
+              <text x={8.5 + i * 15.5} y={24.5} textAnchor="middle" fontSize={10} fontWeight={800} fill="#fff">{ch}</text>
+            </g>
+          ))}
+          <rect x={2} y={31} width={13} height={13} rx={1.5} fill="none" stroke="#565758" strokeWidth={1.5} />
+          <rect x={17.5} y={31} width={13} height={13} rx={1.5} fill="none" stroke="#565758" strokeWidth={1.5} />
+          <rect x={33} y={31} width={13} height={13} rx={1.5} fill="none" stroke="#565758" strokeWidth={1.5} />
+        </svg>
+      );
+    case "domino":
+      return (
+        <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <g key={i} className={i === 0 ? "gi-d1" : i === 1 ? "gi-d2" : ""}>
+              <rect x={6 + i * 13} y={10} width={11} height={30} rx={2} fill="#f5eedc" stroke="#1c1917" strokeWidth={1.2} />
+              <path d={`M${7.5 + i * 13} 25h8`} stroke="#1c1917" strokeWidth={1} />
+              <circle cx={11.5 + i * 13} cy={17.5} r={1.6} fill="#1c1917" />
+              <circle cx={9 + i * 13} cy={30} r={1.4} fill="#1c1917" />
+              <circle cx={14 + i * 13} cy={35} r={1.4} fill="#1c1917" />
+            </g>
+          ))}
+        </svg>
+      );
     default:
       return (
         <svg viewBox="0 0 48 48" className={cls} aria-hidden="true">
